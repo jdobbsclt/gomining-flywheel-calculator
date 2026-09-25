@@ -100,6 +100,8 @@ header p{
 
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .subtle{font-size:11px;color:var(--dim);margin-top:2px;}
+.subtle a{color:var(--amber);text-decoration:none;}
+.subtle a:hover{text-decoration:underline;}
 
 .discount-sum{
   margin-top:6px;
@@ -247,7 +249,8 @@ footer{
     <div class="row2">
       <div class="field">
         <label>GMT Price <b id="gmtPriceOut">$0.3000</b></label>
-        <input type="number" id="gmtPrice" value="0.3000" step="0.0001" oninput="calc()">
+        <input type="number" id="gmtPrice" value="0.3000" step="0.0001" oninput="onGmtPriceInput()">
+        <div class="subtle" id="gmtPriceStatus">Fetching live price…</div>
       </div>
       <div class="field">
         <label>Power Rate <b id="kwhOut">$0.0500</b>/kWh</label>
@@ -419,7 +422,7 @@ breakeven_APR = (target% × weekly_OPEX_GMT × 52) ÷ current_locked_GMT</code>
 </div>
 
 <footer>
-  Not financial advice. Formulas reverse-engineered from real GoMining account screenshots and cross-checked against a real daily income history — verified to reproduce actual on-platform numbers to within ~0.3%. APR default (22.6%) is a live quote pulled from GoMining's own in-app Lock Calculator, not an outside estimate — but it's still a snapshot of one cycle, will move over time, and decays weekly if a lock isn't re-maxed. Treat every "required GMT" number here as conditional on the APR you select above. Inspired by the Flywheel Strategy write-up by u/DracoF on r/gomining.
+  Not financial advice. Formulas reverse-engineered from real GoMining account screenshots and cross-checked against a real daily income history — verified to reproduce actual on-platform numbers to within ~0.3%. APR default (22.6%) is a live quote pulled from GoMining's own in-app Lock Calculator, not an outside estimate — but it's still a snapshot of one cycle, will move over time, and decays weekly if a lock isn't re-maxed. Treat every "required GMT" number here as conditional on the APR you select above. GMT/USD price is pulled live from CoinGecko on load and can be overridden manually. Inspired by the Flywheel Strategy write-up by u/DracoF on r/gomining.
 </footer>
 
 </div>
@@ -435,6 +438,57 @@ function setApr(v){
   document.getElementById('apr').value=v;
   calc();
 }
+
+// ---- Live GMT/USD price (CoinGecko) ----
+const GMT_COINGECKO_ID = 'gmt-token';
+let liveGmtPrice = null;
+let liveGmtFetchedAt = null;
+let gmtPriceManual = false;
+
+function onGmtPriceInput(){
+  gmtPriceManual = true;
+  const statusEl = document.getElementById('gmtPriceStatus');
+  if(statusEl){
+    statusEl.innerHTML = 'Manual entry — <a href="#" onclick="fetchLiveGmtPrice();return false;">use live price</a>';
+  }
+  calc();
+}
+
+async function fetchLiveGmtPrice(){
+  const statusEl = document.getElementById('gmtPriceStatus');
+  if(statusEl) statusEl.textContent = 'Fetching live price…';
+  try{
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+GMT_COINGECKO_ID+'&vs_currencies=usd&include_last_updated_at=true');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const entry = data[GMT_COINGECKO_ID];
+    if(!entry || typeof entry.usd !== 'number') throw new Error('no price in response');
+    liveGmtPrice = entry.usd;
+    liveGmtFetchedAt = entry.last_updated_at ? entry.last_updated_at*1000 : Date.now();
+    gmtPriceManual = false;
+    document.getElementById('gmtPrice').value = liveGmtPrice.toFixed(4);
+    calc();
+    updateGmtPriceStatus();
+  }catch(err){
+    if(statusEl){
+      statusEl.innerHTML = 'Live price unavailable — enter manually. <a href="#" onclick="fetchLiveGmtPrice();return false;">Retry</a>';
+    }
+  }
+}
+
+function updateGmtPriceStatus(){
+  if(gmtPriceManual) return;
+  const statusEl = document.getElementById('gmtPriceStatus');
+  if(!statusEl || !liveGmtFetchedAt) return;
+  const secs = Math.max(0, Math.round((Date.now()-liveGmtFetchedAt)/1000));
+  let ago;
+  if(secs<60) ago = secs+'s ago';
+  else if(secs<3600) ago = Math.round(secs/60)+'m ago';
+  else ago = Math.round(secs/3600)+'h ago';
+  statusEl.innerHTML = 'Live via CoinGecko (GOMINING) · updated '+ago+' — <a href="#" onclick="fetchLiveGmtPrice();return false;">↻ refresh</a>';
+}
+
+setInterval(updateGmtPriceStatus, 30000);
 
 function calc(){
   const th = parseFloat(document.getElementById('th').value)||0;
@@ -551,6 +605,7 @@ function calc(){
 }
 
 calc();
+fetchLiveGmtPrice();
 </script>
 </body>
 </html>
