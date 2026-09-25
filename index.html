@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GMT Lock Calculator — 125% OPEX Flywheel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+  --bg:#12161B;
+  --panel:#1A2029;
+  --panel2:#20272F;
+  --border:#2A323C;
+  --amber:#E2952F;
+  --copper:#C97C3D;
+  --green:#4FAE7C;
+  --red:#D14F43;
+  --text:#EDEDE3;
+  --dim:#8B94A0;
+  --mono:'SF Mono','Consolas','Menlo',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  padding:20px;
+  line-height:1.4;
+}
+.wrap{max-width:1180px;margin:0 auto;}
+header{
+  margin-bottom:20px;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--border);
+}
+header h1{
+  font-size:22px;
+  margin:0 0 4px 0;
+  letter-spacing:0.5px;
+}
+header h1 span{color:var(--amber);}
+header p{
+  margin:0;
+  color:var(--dim);
+  font-size:13px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+@media(max-width:860px){.grid{grid-template-columns:1fr;}}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+}
+.panel h2{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:var(--copper);
+  margin:0 0 14px 0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.panel h2::before{
+  content:"";
+  width:6px;height:6px;
+  background:var(--copper);
+  border-radius:50%;
+  display:inline-block;
+}
+
+.field{margin-bottom:12px;}
+.field label{
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+  color:var(--dim);
+  margin-bottom:4px;
+}
+.field label b{color:var(--text);font-weight:600;font-family:var(--mono);}
+.field input[type=number]{
+  width:100%;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:7px 9px;
+  border-radius:6px;
+  font-family:var(--mono);
+  font-size:13px;
+}
+.field input[type=number]:focus{outline:none;border-color:var(--amber);}
+.field input[type=range]{width:100%;accent-color:var(--amber);}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.subtle{font-size:11px;color:var(--dim);margin-top:2px;}
+
+.discount-sum{
+  margin-top:6px;
+  padding:8px 10px;
+  background:var(--panel2);
+  border-radius:6px;
+  display:flex;
+  justify-content:space-between;
+  font-family:var(--mono);
+  font-size:13px;
+  border:1px solid var(--border);
+}
+.discount-sum b{color:var(--amber);}
+
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.preset-btn{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  color:var(--dim);
+  font-size:11px;
+  padding:4px 9px;
+  border-radius:20px;
+  cursor:pointer;
+  font-family:var(--mono);
+}
+.preset-btn:hover{border-color:var(--amber);color:var(--text);}
+
+/* Results panel */
+.results{grid-column:1/-1;}
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+@media(max-width:860px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+.stat{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:12px 14px;
+}
+.stat .lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.stat .val{font-family:var(--mono);font-size:20px;font-weight:600;}
+.stat .sub{font-size:11px;color:var(--dim);margin-top:4px;}
+
+.headline{
+  background:linear-gradient(135deg,#20272F,#1A2029);
+  border:1px solid var(--amber);
+  border-radius:10px;
+  padding:18px 20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.headline .htxt h3{margin:0 0 4px 0;font-size:13px;color:var(--amber);text-transform:uppercase;letter-spacing:0.5px;}
+.headline .htxt p{margin:0;font-size:12px;color:var(--dim);max-width:520px;}
+.headline .hval{font-family:var(--mono);font-size:34px;font-weight:700;color:var(--amber);text-align:right;}
+.headline .hval .unit{font-size:14px;color:var(--dim);font-weight:400;}
+
+.gap-bar-wrap{margin-top:4px;}
+.gap-bar{
+  height:10px;
+  background:var(--panel2);
+  border-radius:5px;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.gap-bar-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--green),var(--amber));
+  transition:width 0.15s;
+}
+.gap-bar-fill.over{background:linear-gradient(90deg,var(--green),#3d9c6b);}
+
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+.compare-table th{
+  text-align:left;color:var(--dim);font-weight:500;font-size:11px;
+  text-transform:uppercase;letter-spacing:0.5px;padding:6px 8px;
+  border-bottom:1px solid var(--border);
+}
+.compare-table td{padding:8px;border-bottom:1px solid var(--border);font-family:var(--mono);}
+.compare-table tr:last-child td{border-bottom:none;}
+.tag{
+  display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;
+  font-family:var(--sans);font-weight:600;
+}
+.tag.reliable{background:rgba(79,174,124,0.15);color:var(--green);}
+.tag.unverified{background:rgba(209,79,67,0.15);color:var(--red);}
+.tag.met{background:rgba(79,174,124,0.15);color:var(--green);}
+.tag.short{background:rgba(226,149,47,0.15);color:var(--amber);}
+
+details.formula{
+  grid-column:1/-1;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 18px;
+}
+details.formula summary{
+  cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--copper);outline:none;
+}
+.formula-body{margin-top:14px;font-size:13px;color:var(--dim);}
+.formula-body code{
+  display:block;background:var(--panel2);border:1px solid var(--border);
+  border-radius:6px;padding:8px 10px;margin:6px 0 12px 0;color:var(--text);
+  font-family:var(--mono);font-size:12px;overflow-x:auto;
+}
+.formula-body h4{color:var(--text);font-size:12px;margin:0 0 4px 0;}
+
+footer{
+  margin-top:20px;padding-top:14px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--dim);
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>GMT Lock <span>Calculator</span></h1>
+  <p>How much GMT do you need locked to hit a 125% OPEX self-sufficiency target? Every field is editable — defaults show a fully-built Flywheel (360 locked / 140 liquid days). Swap in your own numbers from GoMining's Maintenance Discount page.</p>
+</header>
+
+<div class="grid">
+
+  <!-- FARM & MARKET -->
+  <div class="panel">
+    <h2>Farm &amp; Market</h2>
+    <div class="row2">
+      <div class="field">
+        <label>Total Hashpower <b id="thOut">20.00</b> TH</label>
+        <input type="number" id="th" value="20.00" step="0.01" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Efficiency <b id="wattOut">12</b> W/TH</label>
+        <input type="number" id="watt" value="12" step="0.5" oninput="calc()">
+        <div class="subtle">12W = current floor tier · 15W = legacy</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>GMT Price <b id="gmtPriceOut">$0.3000</b></label>
+        <input type="number" id="gmtPrice" value="0.3000" step="0.0001" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Power Rate <b id="kwhOut">$0.0500</b>/kWh</label>
+        <input type="number" id="kwh" value="0.05" step="0.001" oninput="calc()">
+        <div class="subtle">Platform tariff constant, not your utility bill</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Service Constant <b id="svcConstOut">$0.0089</b></label>
+      <input type="number" id="svcConst" value="0.0089" step="0.0001" oninput="calc()">
+      <div class="subtle">Flat per-TH service fee constant (0% discount)</div>
+    </div>
+  </div>
+
+  <!-- DISCOUNTS -->
+  <div class="panel">
+    <h2>Maintenance Discount Stack</h2>
+    <div class="row2">
+      <div class="field">
+        <label>Token Discount <b id="d1Out">20.0%</b></label>
+        <input type="range" id="d1" min="0" max="20" step="0.1" value="20" oninput="calc()">
+        <div class="subtle">Days-covered based, caps at 20% / 360 days</div>
+      </div>
+      <div class="field">
+        <label>Service Streak <b id="d2Out">1.5%</b></label>
+        <input type="range" id="d2" min="0" max="3" step="0.1" value="1.5" oninput="calc()">
+        <div class="subtle">+0.3%/day, resets on any missed day</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>VIP Tier <b id="d3Out">0.0%</b></label>
+        <input type="range" id="d3" min="0" max="6" step="0.1" value="0" oninput="calc()">
+        <div class="subtle">Gold II = 1.8% · Platinum I = 2.1%</div>
+      </div>
+      <div class="field">
+        <label>Mining Mode <b id="d4Out">1.00%</b></label>
+        <input type="range" id="d4" min="0" max="3" step="0.05" value="1.00" oninput="calc()">
+        <div class="subtle">Weekly governance-vote dependent</div>
+      </div>
+    </div>
+    <div class="discount-sum">
+      <span>Total Discount Applied</span>
+      <b id="dTotalOut">22.50%</b>
+    </div>
+  </div>
+
+  <!-- POSITION -->
+  <div class="panel">
+    <h2>GMT Position</h2>
+    <div class="row2">
+      <div class="field">
+        <label>Locked Days <b id="lockedDaysOut">360</b></label>
+        <input type="number" id="lockedDays" value="360" step="1" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Liquid Days <b id="liquidDaysOut">140</b></label>
+        <input type="number" id="liquidDays" value="140" step="1" oninput="calc()">
+      </div>
+    </div>
+    <div class="subtle">"Days" = what GoMining's Maintenance Discount page shows, calculated at 0% discount. The calculator converts these to estimated GMT token amounts below.</div>
+    <div class="row2" style="margin-top:12px;">
+      <div class="stat" style="padding:10px 12px;">
+        <div class="lbl">Est. Locked GMT</div>
+        <div class="val" id="lockedGmtOut" style="font-size:16px;">—</div>
+      </div>
+      <div class="stat" style="padding:10px 12px;">
+        <div class="lbl">Est. Liquid GMT</div>
+        <div class="val" id="liquidGmtOut" style="font-size:16px;">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARGET & ASSUMPTIONS -->
+  <div class="panel">
+    <h2>Target &amp; Assumptions</h2>
+    <div class="field">
+      <label>OPEX Coverage Target <b id="targetOut">125%</b></label>
+      <input type="range" id="target" min="50" max="200" step="5" value="125" oninput="calc()">
+      <div class="subtle">Locked-GMT dividends as % of weekly electricity + service cost</div>
+    </div>
+    <div class="field">
+      <label>Assumed Lock Dividend APR <b id="aprOut">22.6%</b></label>
+      <input type="range" id="apr" min="1" max="95" step="0.1" value="22.6" oninput="calc()">
+      <div class="presets">
+        <button class="preset-btn" onclick="setApr(21.4)">21.4% — whale-size lock (dilution floor)</button>
+        <button class="preset-btn" onclick="setApr(22.6)">22.6% — live platform quote (~2K GOMINING)</button>
+        <button class="preset-btn" onclick="setApr(12.6)">12.6% — 1 blogger, no timeframe</button>
+        <button class="preset-btn" onclick="setApr(92)">92% — platform dashboard, undisclosed methodology</button>
+      </div>
+      <div class="subtle" style="margin-top:6px;">Default (22.6%) is a live read from GoMining's own in-app Lock Calculator: locking ~2,000 GOMINING at max duration quoted 22.58% APR, matching the "Cycle 162: APR 22.68%" badge shown platform-wide at the time. Locking far more dilutes it slightly — 21.42% at 10M GOMINING (the calculator's slider max) — but that only bites at whale scale. This decays weekly if a lock isn't re-maxed, which is why DracoF's weekly ritual matters. The 12.6% and 92% figures are lower-confidence outliers, kept here for range only. This is a live cycle rate, not a fixed one — check GoMining's own Lock Calculator for the current number before relying on it.</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel results">
+    <h2>Results</h2>
+
+    <div class="headline">
+      <div class="htxt">
+        <h3>Breakeven APR</h3>
+        <p>The dividend yield at which your <b>current</b> locked GMT already hits your target coverage — with no more capital added.</p>
+      </div>
+      <div class="hval"><span id="breakevenApr">—</span><span class="unit">%APR</span></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="lbl">Weekly OPEX</div>
+        <div class="val" id="weeklyOpexUsd">—</div>
+        <div class="sub" id="weeklyOpexGmt">— GMT/wk</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Weekly Dividend @ Assumed APR</div>
+        <div class="val" id="weeklyDivUsd">—</div>
+        <div class="sub" id="weeklyDivGmt">— GMT/wk</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Current Coverage</div>
+        <div class="val" id="currentCoverage">—</div>
+        <div class="sub" id="coverageStatus">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">GMT Needed to Hit Target</div>
+        <div class="val" id="requiredGmt">—</div>
+        <div class="sub" id="requiredUsd">—</div>
+      </div>
+    </div>
+
+    <div class="gap-bar-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:4px;">
+        <span>Locked GMT: current vs. required for target @ assumed APR</span>
+        <span id="gapLabel">—</span>
+      </div>
+      <div class="gap-bar"><div class="gap-bar-fill" id="gapBar" style="width:0%;"></div></div>
+    </div>
+
+    <table class="compare-table">
+      <tr><th>Scenario</th><th>Assumed APR</th><th>Required Locked GMT</th><th>Gap vs. Current</th><th>Extra Capital Needed</th></tr>
+      <tbody id="scenarioRows"></tbody>
+    </table>
+  </div>
+
+  <details class="formula">
+    <summary>Formula reference</summary>
+    <div class="formula-body">
+      <h4>Daily maintenance per TH (at 0% discount)</h4>
+      <code>elec_0 = (kWh_rate × 24 × W/TH) / GMT_price / 1000
+service_0 = service_constant / GMT_price</code>
+
+      <h4>Actual daily maintenance (with your discount stack applied)</h4>
+      <code>daily_GMT = TH × (elec_0 + service_0) × (1 − total_discount)
+weekly_OPEX_GMT = daily_GMT × 7</code>
+
+      <h4>Locked / liquid GMT from displayed "days"</h4>
+      <code>locked_GMT ≈ locked_days × TH × (elec_0 + service_0)
+liquid_GMT ≈ liquid_days × TH × (elec_0 + service_0)</code>
+      <p style="margin:6px 0 0 0;">GoMining's "days" figure is always computed at the 0% discount rate — that's why this conversion doesn't use your discount stack, even though your actual weekly bill does.</p>
+
+      <h4>Coverage &amp; breakeven</h4>
+      <code>weekly_dividend_GMT = locked_GMT × APR ÷ 52
+coverage % = weekly_dividend_GMT ÷ weekly_OPEX_GMT × 100
+required_locked_GMT = (target% × weekly_OPEX_GMT × 52) ÷ APR
+breakeven_APR = (target% × weekly_OPEX_GMT × 52) ÷ current_locked_GMT</code>
+      <p style="margin:6px 0 0 0;">Dividends and OPEX are compared in GMT terms directly, so GMT price only matters for converting to USD for display — not for the coverage math itself.</p>
+    </div>
+  </details>
+
+</div>
+
+<footer>
+  Not financial advice. Formulas reverse-engineered from real GoMining account screenshots and cross-checked against a real daily income history — verified to reproduce actual on-platform numbers to within ~0.3%. APR default (22.6%) is a live quote pulled from GoMining's own in-app Lock Calculator, not an outside estimate — but it's still a snapshot of one cycle, will move over time, and decays weekly if a lock isn't re-maxed. Treat every "required GMT" number here as conditional on the APR you select above. Inspired by the Flywheel Strategy write-up by u/DracoF on r/gomining.
+</footer>
+
+</div>
+
+<script>
+function fmt(n,d=2){
+  if(!isFinite(n)) return "—";
+  return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function usd(n){ return "$"+fmt(n,2); }
+
+function setApr(v){
+  document.getElementById('apr').value=v;
+  calc();
+}
+
+function calc(){
+  const th = parseFloat(document.getElementById('th').value)||0;
+  const watt = parseFloat(document.getElementById('watt').value)||0;
+  const gmtPrice = parseFloat(document.getElementById('gmtPrice').value)||0.0001;
+  const kwh = parseFloat(document.getElementById('kwh').value)||0;
+  const svcConst = parseFloat(document.getElementById('svcConst').value)||0;
+
+  const d1 = parseFloat(document.getElementById('d1').value)/100;
+  const d2 = parseFloat(document.getElementById('d2').value)/100;
+  const d3 = parseFloat(document.getElementById('d3').value)/100;
+  const d4 = parseFloat(document.getElementById('d4').value)/100;
+  const totalDiscount = d1+d2+d3+d4;
+
+  const lockedDays = parseFloat(document.getElementById('lockedDays').value)||0;
+  const liquidDays = parseFloat(document.getElementById('liquidDays').value)||0;
+
+  const target = parseFloat(document.getElementById('target').value)/100;
+  const apr = parseFloat(document.getElementById('apr').value)/100;
+
+  // display echoes
+  document.getElementById('thOut').textContent = fmt(th,2);
+  document.getElementById('wattOut').textContent = fmt(watt,1);
+  document.getElementById('gmtPriceOut').textContent = "$"+fmt(gmtPrice,4);
+  document.getElementById('kwhOut').textContent = "$"+fmt(kwh,4);
+  document.getElementById('svcConstOut').textContent = "$"+fmt(svcConst,4);
+  document.getElementById('d1Out').textContent = fmt(d1*100,1)+"%";
+  document.getElementById('d2Out').textContent = fmt(d2*100,1)+"%";
+  document.getElementById('d3Out').textContent = fmt(d3*100,1)+"%";
+  document.getElementById('d4Out').textContent = fmt(d4*100,2)+"%";
+  document.getElementById('dTotalOut').textContent = fmt(totalDiscount*100,2)+"%";
+  document.getElementById('lockedDaysOut').textContent = fmt(lockedDays,0);
+  document.getElementById('liquidDaysOut').textContent = fmt(liquidDays,0);
+  document.getElementById('targetOut').textContent = fmt(target*100,0)+"%";
+  document.getElementById('aprOut').textContent = fmt(apr*100,1)+"%";
+
+  // core per-TH daily figures at 0% discount
+  const elec0 = (kwh*24*watt)/gmtPrice/1000;      // GMT/TH/day
+  const svc0 = svcConst/gmtPrice;                  // GMT/TH/day
+  const perTh0 = elec0+svc0;                        // GMT/TH/day @0%
+  const dailyTotal0GMT = perTh0*th;                  // GMT/day @0% whole farm
+  const dailyTotalGMT = dailyTotal0GMT*(1-totalDiscount); // GMT/day actual
+  const dailyTotalUSD = dailyTotalGMT*gmtPrice;
+
+  const weeklyOpexGMT = dailyTotalGMT*7;
+  const weeklyOpexUSD = dailyTotalUSD*7;
+
+  // locked / liquid GMT estimate (from days, at 0% rate per DracoF's definition)
+  const lockedGMT = lockedDays*dailyTotal0GMT;
+  const liquidGMT = liquidDays*dailyTotal0GMT;
+
+  document.getElementById('lockedGmtOut').textContent = fmt(lockedGMT,0)+" GMT";
+  document.getElementById('liquidGmtOut').textContent = fmt(liquidGMT,0)+" GMT";
+
+  document.getElementById('weeklyOpexUsd').textContent = usd(weeklyOpexUSD);
+  document.getElementById('weeklyOpexGmt').textContent = fmt(weeklyOpexGMT,2)+" GMT/wk";
+
+  // dividend at assumed APR
+  const weeklyDivGMT = lockedGMT*apr/52;
+  const weeklyDivUSD = weeklyDivGMT*gmtPrice;
+  document.getElementById('weeklyDivUsd').textContent = usd(weeklyDivUSD);
+  document.getElementById('weeklyDivGmt').textContent = fmt(weeklyDivGMT,2)+" GMT/wk";
+
+  const coveragePct = weeklyOpexGMT>0 ? (weeklyDivGMT/weeklyOpexGMT*100) : 0;
+  document.getElementById('currentCoverage').textContent = fmt(coveragePct,1)+"%";
+  const covStatusEl = document.getElementById('coverageStatus');
+  if(coveragePct>=target*100){
+    covStatusEl.innerHTML = '<span class="tag met">meets target</span>';
+  }else{
+    covStatusEl.innerHTML = '<span class="tag short">'+fmt(target*100-coveragePct,1)+'% short</span>';
+  }
+
+  // required locked GMT for target at assumed APR
+  const requiredGMT = apr>0 ? (target*weeklyOpexGMT*52)/apr : Infinity;
+  const requiredUSD = requiredGMT*gmtPrice;
+  document.getElementById('requiredGmt').textContent = isFinite(requiredGMT)? fmt(requiredGMT,0)+" GMT" : "—";
+  document.getElementById('requiredUsd').textContent = isFinite(requiredUSD)? "≈ "+usd(requiredUSD)+" at current price" : "";
+
+  // breakeven APR: APR at which CURRENT locked GMT hits target
+  const breakevenApr = lockedGMT>0 ? (target*weeklyOpexGMT*52)/lockedGMT*100 : Infinity;
+  document.getElementById('breakevenApr').textContent = isFinite(breakevenApr) ? fmt(breakevenApr,1) : "—";
+
+  // gap bar: current locked vs required
+  const gapPct = requiredGMT>0 ? Math.min(100,(lockedGMT/requiredGMT*100)) : 0;
+  const bar = document.getElementById('gapBar');
+  bar.style.width = gapPct+"%";
+  bar.classList.toggle('over', lockedGMT>=requiredGMT);
+  const gapGMT = requiredGMT-lockedGMT;
+  document.getElementById('gapLabel').textContent = gapGMT>0
+    ? fmt(lockedGMT,0)+" / "+fmt(requiredGMT,0)+" GMT ("+fmt(gapGMT,0)+" short)"
+    : fmt(lockedGMT,0)+" / "+fmt(requiredGMT,0)+" GMT (target met)";
+
+  // scenario table across key APR reference points
+  const scenarios = [
+    {label:"1 blogger, no timeframe", apr:0.126, tag:"unverified"},
+    {label:"Live quote — whale-size lock", apr:0.214, tag:"reliable"},
+    {label:"Live quote — ~2K GOMINING lock", apr:0.226, tag:"reliable"},
+    {label:"Platform dashboard headline", apr:0.92, tag:"unverified"}
+  ];
+  let rows = "";
+  scenarios.forEach(s=>{
+    const req = (target*weeklyOpexGMT*52)/s.apr;
+    const gap = req-lockedGMT;
+    const extraUsd = Math.max(0,gap)*gmtPrice;
+    rows += "<tr>"
+      + "<td style=\"font-family:var(--sans);\">"+s.label+" <span class=\"tag "+s.tag+"\">"+fmt(s.apr*100,1)+"%</span></td>"
+      + "<td>"+fmt(s.apr*100,1)+"%</td>"
+      + "<td>"+fmt(req,0)+" GMT</td>"
+      + "<td>"+(gap>0 ? fmt(gap,0)+" GMT short" : "met")+"</td>"
+      + "<td>"+(gap>0 ? usd(extraUsd) : "$0")+"</td>"
+      + "</tr>";
+  });
+  document.getElementById('scenarioRows').innerHTML = rows;
+}
+
+calc();
+</script>
+</body>
+</html>
