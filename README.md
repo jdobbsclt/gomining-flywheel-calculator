@@ -2,7 +2,7 @@
 
 A single-page, no-build calculator for [GoMining](https://gomining.com) miners running the **Flywheel Strategy** (originally written up by u/DracoF on [r/gomining](https://www.reddit.com/r/gomining/)), extended to a "125% OPEX coverage" target: how much GMT do you need locked so the dividend yield alone covers your weekly electricity + service costs?
 
-**[Live site →](#)** *(update this link once GitHub Pages is enabled)*
+**[Live site →](https://jdobbsclt.github.io/gomining-flywheel-calculator/)**
 
 ## What it does
 
