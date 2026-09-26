@@ -1,7 +1,8 @@
 {
-  "total_votes": 183317000,
-  "weekly_pool_gmt": 797632,
-  "changed_at": "2026-09-26T13:09:09Z",
-  "checked_at": "2026-09-26T13:09:09Z",
-  "source": "fitted to GoMining Lock Calculator readings, 2026-09-26 (seed until the nightly job takes over)"
+  "total_votes": 183061419.85,
+  "weekly_pool_gmt": 796537.69,
+  "cycle": "2026-09-22",
+  "changed_at": "2026-09-26T13:29:56Z",
+  "checked_at": "2026-09-26T13:29:56Z",
+  "source": "GoMining app: lock statistics + latest mint cycle (nightly ServiceTap run)"
 }
