@@ -307,29 +307,29 @@ footer{
       <div class="field">
         <label>VIP Tier <b id="d3Out">0.0%</b></label>
         <select id="d3" onchange="calc()">
-          <option value="0.0" selected>0.0%</option>
-          <option value="0.3">0.3%</option>
-          <option value="0.6">0.6%</option>
-          <option value="0.9">0.9%</option>
-          <option value="1.2">1.2%</option>
-          <option value="1.5">1.5%</option>
-          <option value="1.8">1.8% (Gold II)</option>
-          <option value="2.1">2.1% (Platinum I)</option>
-          <option value="2.4">2.4%</option>
-          <option value="2.7">2.7%</option>
-          <option value="3.0">3.0%</option>
-          <option value="3.3">3.3%</option>
-          <option value="3.6">3.6%</option>
-          <option value="3.9">3.9%</option>
-          <option value="4.2">4.2%</option>
-          <option value="4.5">4.5%</option>
-          <option value="4.8">4.8%</option>
-          <option value="5.1">5.1%</option>
-          <option value="5.4">5.4%</option>
-          <option value="5.7">5.7%</option>
-          <option value="6.0">6.0%</option>
+          <option value="0.0" selected>Bronze I — 0.0%</option>
+          <option value="0.3">Bronze II — 0.3%</option>
+          <option value="0.6">Silver I — 0.6%</option>
+          <option value="0.9">Silver II — 0.9%</option>
+          <option value="1.2">Silver III — 1.2%</option>
+          <option value="1.5">Gold I — 1.5%</option>
+          <option value="1.8">Gold II — 1.8%</option>
+          <option value="2.1">Platinum I — 2.1%</option>
+          <option value="2.4">Platinum II — 2.4%</option>
+          <option value="2.7">Platinum III — 2.7%</option>
+          <option value="3.0">Diamond I — 3.0%</option>
+          <option value="3.3">Diamond II — 3.3%</option>
+          <option value="3.6">Diamond III — 3.6%</option>
+          <option value="3.9">Diamond IV — 3.9%</option>
+          <option value="4.2">Diamond V — 4.2%</option>
+          <option value="4.5">Legend I — 4.5%</option>
+          <option value="4.8">Legend II — 4.8%</option>
+          <option value="5.1">Legend III — 5.1%</option>
+          <option value="5.4">Legend IV — 5.4%</option>
+          <option value="5.7">Legend V — 5.7%</option>
+          <option value="6.0">Elite — 6.0%</option>
         </select>
-        <div class="subtle">Gold II = 1.8% · Platinum I = 2.1%</div>
+        <div class="subtle">Your tier is shown in the GoMining app (VIP page).</div>
       </div>
       <div class="field">
         <label>Mining Mode (Solo) <b id="d4Out">1.35%</b></label>
@@ -350,24 +350,24 @@ footer{
     <div class="row2">
       <div class="field">
         <label>Locked Days <b id="lockedDaysOut">360</b></label>
-        <input type="number" id="lockedDays" value="360" step="1" oninput="calc()">
+        <input type="number" id="lockedDays" value="360" step="1" oninput="setBasis('locked','days')">
       </div>
       <div class="field">
         <label>Liquid Days <b id="liquidDaysOut">140</b></label>
-        <input type="number" id="liquidDays" value="140" step="1" oninput="calc()">
+        <input type="number" id="liquidDays" value="140" step="1" oninput="setBasis('liquid','days')">
       </div>
     </div>
-    <div class="subtle">"Days" = what GoMining's Maintenance Discount page shows, calculated at 0% discount. The calculator converts these to estimated GMT token amounts below.</div>
-    <div class="row2" style="margin-top:12px;">
-      <div class="stat" style="padding:10px 12px;">
-        <div class="lbl">Est. Locked GMT</div>
-        <div class="val" id="lockedGmtOut" style="font-size:16px;">—</div>
+    <div class="row2">
+      <div class="field">
+        <label>Locked GMT <b id="lockedGmtOut">—</b></label>
+        <input type="number" id="lockedGmt" step="1" min="0" oninput="setBasis('locked','gmt')">
       </div>
-      <div class="stat" style="padding:10px 12px;">
-        <div class="lbl">Est. Liquid GMT</div>
-        <div class="val" id="liquidGmtOut" style="font-size:16px;">—</div>
+      <div class="field">
+        <label>Liquid GMT <b id="liquidGmtOut">—</b></label>
+        <input type="number" id="liquidGmt" step="1" min="0" oninput="setBasis('liquid','gmt')">
       </div>
     </div>
+    <div class="subtle">"Days" = what GoMining's Maintenance Discount page shows, calculated at 0% discount. Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
   </div>
 
   <!-- TARGET & ASSUMPTIONS -->
@@ -451,10 +451,11 @@ service_0 = service_constant / GMT_price</code>
       <code>daily_GMT = TH × (elec_0 + service_0) × (1 − total_discount)
 weekly_OPEX_GMT = daily_GMT × 7</code>
 
-      <h4>Locked / liquid GMT from displayed "days"</h4>
+      <h4>Locked / liquid GMT from displayed "days" (and back)</h4>
       <code>locked_GMT ≈ locked_days × TH × (elec_0 + service_0)
-liquid_GMT ≈ liquid_days × TH × (elec_0 + service_0)</code>
-      <p style="margin:6px 0 0 0;">GoMining's "days" figure is always computed at the 0% discount rate — that's why this conversion doesn't use your discount stack, even though your actual weekly bill does.</p>
+liquid_GMT ≈ liquid_days × TH × (elec_0 + service_0)
+locked_days = locked_GMT ÷ (TH × (elec_0 + service_0))     (when you type GMT instead)</code>
+      <p style="margin:6px 0 0 0;">GoMining's "days" figure is always computed at the 0% discount rate — that's why this conversion doesn't use your discount stack, even though your actual weekly bill does. You can enter either days or GMT; the one you edited last is kept, and the other is derived from it.</p>
 
       <h4>Coverage &amp; breakeven</h4>
       <code>weekly_dividend_GMT = locked_GMT × APR ÷ 52
@@ -483,6 +484,19 @@ function usd(n){ return "$"+fmt(n,2); }
 function setApr(v){
   document.getElementById('apr').value=v;
   calc();
+}
+
+// ---- Locked / liquid position: days and GMT are two views of one amount ----
+// positionBasis records which field the user typed in last. That field is the
+// source of truth; the other is derived from it (and rewritten) on every calc().
+// Default is 'days', matching GoMining's Maintenance Discount page.
+const positionBasis = {locked:'days', liquid:'days'};
+function setBasis(which, source){
+  positionBasis[which] = source;
+  calc();
+}
+function roundForInput(n, decimals){
+  return isFinite(n) ? String(+n.toFixed(decimals)) : '';
 }
 
 // ---- Live GMT/USD price (CoinGecko) ----
@@ -599,8 +613,6 @@ function calc(){
   const d4 = parseFloat(document.getElementById('d4').value)/100;
   const totalDiscount = d1+d2+d3+d4;
 
-  const lockedDays = parseFloat(document.getElementById('lockedDays').value)||0;
-  const liquidDays = parseFloat(document.getElementById('liquidDays').value)||0;
 
   const target = parseFloat(document.getElementById('target').value)/100;
   const apr = parseFloat(document.getElementById('apr').value)/100;
@@ -616,8 +628,6 @@ function calc(){
   document.getElementById('d3Out').textContent = fmt(d3*100,1)+"%";
   document.getElementById('d4Out').textContent = fmt(d4*100,2)+"%";
   document.getElementById('dTotalOut').textContent = fmt(totalDiscount*100,2)+"%";
-  document.getElementById('lockedDaysOut').textContent = fmt(lockedDays,0);
-  document.getElementById('liquidDaysOut').textContent = fmt(liquidDays,0);
   document.getElementById('targetOut').textContent = fmt(target*100,0)+"%";
   document.getElementById('aprOut').textContent = fmt(apr*100,1)+"%";
 
@@ -632,12 +642,34 @@ function calc(){
   const weeklyOpexGMT = dailyTotalGMT*7;
   const weeklyOpexUSD = dailyTotalUSD*7;
 
-  // locked / liquid GMT estimate (from days, at 0% rate per DracoF's definition)
-  const lockedGMT = lockedDays*dailyTotal0GMT;
-  const liquidGMT = liquidDays*dailyTotal0GMT;
+  // locked / liquid position. "Days" convert to GMT at the 0% rate (per DracoF's
+  // definition), so GMT = days x dailyTotal0GMT and days = GMT / dailyTotal0GMT.
+  // Whichever field was edited last (positionBasis) is read; the other is derived
+  // and written back. The field being typed in is never overwritten, because it
+  // is always the basis.
+  const position = {};
+  ['locked','liquid'].forEach(which=>{
+    const daysEl = document.getElementById(which+'Days');
+    const gmtEl = document.getElementById(which+'Gmt');
+    let days, gmt;
+    if(positionBasis[which]==='gmt'){
+      gmt = parseFloat(gmtEl.value)||0;
+      days = dailyTotal0GMT>0 ? gmt/dailyTotal0GMT : 0;
+      daysEl.value = roundForInput(days,1);
+    }else{
+      days = parseFloat(daysEl.value)||0;
+      gmt = days*dailyTotal0GMT;
+      gmtEl.value = roundForInput(gmt,2);
+    }
+    position[which] = {days, gmt};
+  });
+  const lockedGMT = position.locked.gmt;
+  const liquidGMT = position.liquid.gmt;
 
-  document.getElementById('lockedGmtOut').textContent = fmt(lockedGMT,0)+" GMT";
-  document.getElementById('liquidGmtOut').textContent = fmt(liquidGMT,0)+" GMT";
+  document.getElementById('lockedDaysOut').textContent = fmt(position.locked.days,0);
+  document.getElementById('liquidDaysOut').textContent = fmt(position.liquid.days,0);
+  document.getElementById('lockedGmtOut').textContent = fmt(lockedGMT,0);
+  document.getElementById('liquidGmtOut').textContent = fmt(liquidGMT,0);
 
   document.getElementById('weeklyOpexUsd').textContent = usd(weeklyOpexUSD);
   document.getElementById('weeklyOpexGmt').textContent = fmt(weeklyOpexGMT,2)+" GMT/wk";

@@ -6,10 +6,10 @@ A single-page, no-build calculator for [GoMining](https://gomining.com) miners r
 
 ## What it does
 
-Almost every input is editable — total hashpower, efficiency (W/TH), GMT price, power rate, and three of the four independent maintenance-discount components (token discount slider, service-streak dropdown, VIP-tier dropdown) — and results update live. The fourth, **Mining Mode**, is set by GoMining's weekly veGOMINING vote for everyone in Mining mode, so it isn't editable: the page reads it from `mining-mode.json` (see below).
+Almost every input is editable — total hashpower, efficiency (W/TH), GMT price, power rate, and three of the four independent maintenance-discount components (token discount slider, service-streak dropdown, VIP-tier dropdown with all 21 tier names from Bronze I to Elite) — and results update live. The fourth, **Mining Mode**, is set by GoMining's weekly veGOMINING vote for everyone in Mining mode, so it isn't editable: the page reads it from `mining-mode.json` (see below).
 
 - Weekly OPEX in USD and GMT
-- Estimated locked/liquid GMT from your "days covered" figures
+- Locked and liquid GMT — enter either your "days covered" figures (from GoMining's Maintenance Discount page) or your GMT amounts directly; whichever you edit last is kept and the other is derived from it
 - Weekly dividend at an assumed lock APR
 - **Required locked GMT** to hit a chosen OPEX-coverage target (default 125%)
 - **Breakeven APR** — the yield at which your current locked GMT already meets the target
