@@ -128,19 +128,6 @@ header p{
 }
 .discount-sum b{color:var(--amber);}
 
-.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
-.preset-btn{
-  background:var(--panel2);
-  border:1px solid var(--border);
-  color:var(--dim);
-  font-size:11px;
-  padding:4px 9px;
-  border-radius:20px;
-  cursor:pointer;
-  font-family:var(--mono);
-}
-.preset-btn:hover{border-color:var(--amber);color:var(--text);}
-
 /* Results panel */
 .results{grid-column:1/-1;}
 .stat-grid{
@@ -376,18 +363,10 @@ footer{
     <div class="field">
       <label>OPEX Coverage Target <b id="targetOut">125%</b></label>
       <input type="range" id="target" min="50" max="200" step="5" value="125" oninput="calc()">
-      <div class="subtle">Locked-GMT dividends as % of weekly electricity + service cost</div>
     </div>
     <div class="field">
       <label>Assumed Lock Dividend APR <b id="aprOut">22.6%</b></label>
       <input type="range" id="apr" min="1" max="95" step="0.1" value="22.6" oninput="calc()">
-      <div class="presets">
-        <button class="preset-btn" onclick="setApr(21.4)">21.4% — whale-size lock (dilution floor)</button>
-        <button class="preset-btn" onclick="setApr(22.6)">22.6% — live platform quote (~2K GOMINING)</button>
-        <button class="preset-btn" onclick="setApr(12.6)">12.6% — 1 blogger, no timeframe</button>
-        <button class="preset-btn" onclick="setApr(92)">92% — platform dashboard, undisclosed methodology</button>
-      </div>
-      <div class="subtle" style="margin-top:6px;">Default (22.6%) is a live read from GoMining's own in-app Lock Calculator: locking ~2,000 GOMINING at max duration quoted 22.58% APR, matching the "Cycle 162: APR 22.68%" badge shown platform-wide at the time. Locking far more dilutes it slightly — 21.42% at 10M GOMINING (the calculator's slider max) — but that only bites at whale scale. This decays weekly if a lock isn't re-maxed, which is why DracoF's weekly ritual matters. The 12.6% and 92% figures are lower-confidence outliers, kept here for range only. This is a live cycle rate, not a fixed one — check GoMining's own Lock Calculator for the current number before relying on it.</div>
     </div>
   </div>
 
@@ -480,11 +459,6 @@ function fmt(n,d=2){
   return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 }
 function usd(n){ return "$"+fmt(n,2); }
-
-function setApr(v){
-  document.getElementById('apr').value=v;
-  calc();
-}
 
 // ---- Locked / liquid position: days and GMT are two views of one amount ----
 // positionBasis records which field the user typed in last. That field is the
