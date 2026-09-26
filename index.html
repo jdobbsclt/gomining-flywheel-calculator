@@ -282,7 +282,7 @@ footer{
 
 <header>
   <h1>GMT Flywheel <span>Calculators</span></h1>
-  <p>Plan a GoMining Flywheel three ways. Enter your farm and your GMT once below; each tab applies a different strategy to the same numbers. Defaults show a fully-built Flywheel (360 locked / 140 liquid days).</p>
+  <p>Plan a GoMining Flywheel three ways. Enter your farm and the GMT you hold once below; each tab applies a different strategy to the same numbers and tells you what to add.</p>
 </header>
 
 <div class="tabs" role="tablist" aria-label="Flywheel calculators">
@@ -395,26 +395,26 @@ footer{
 
   <!-- POSITION -->
   <div class="panel" id="posPanel">
-    <h2>GMT Position</h2>
+    <h2>My GMT Position</h2>
     <div class="posgrid">
       <div class="field">
-        <label>Locked Days <b id="lockedDaysOut">360</b></label>
-        <input type="number" id="lockedDays" value="360" step="1" oninput="setBasis('locked','days')">
-      </div>
-      <div class="field">
-        <label>Liquid Days <b id="liquidDaysOut">140</b></label>
-        <input type="number" id="liquidDays" value="140" step="1" oninput="setBasis('liquid','days')">
-      </div>
-      <div class="field">
         <label>Locked GMT <b id="lockedGmtOut">—</b></label>
-        <input type="number" id="lockedGmt" step="1" min="0" oninput="setBasis('locked','gmt')">
+        <input type="number" id="lockedGmt" step="1" min="0" placeholder="GMT you have locked" oninput="setBasis('locked','gmt')">
       </div>
       <div class="field">
         <label>Liquid GMT <b id="liquidGmtOut">—</b></label>
-        <input type="number" id="liquidGmt" step="1" min="0" oninput="setBasis('liquid','gmt')">
+        <input type="number" id="liquidGmt" step="1" min="0" placeholder="GMT you hold unlocked" oninput="setBasis('liquid','gmt')">
+      </div>
+      <div class="field">
+        <label>Locked Days <b id="lockedDaysOut">0</b></label>
+        <input type="number" id="lockedDays" step="1" min="0" placeholder="or days of cover" oninput="setBasis('locked','days')">
+      </div>
+      <div class="field">
+        <label>Liquid Days <b id="liquidDaysOut">0</b></label>
+        <input type="number" id="liquidDays" step="1" min="0" placeholder="or days of cover" oninput="setBasis('liquid','days')">
       </div>
     </div>
-    <div class="subtle">"Days" = days of maintenance your GMT covers, as on GoMining's Maintenance Discount page (counted after your VIP, service and mining-mode discounts, before the token discount). Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
+    <div class="subtle">Enter what you hold today. Leave a box empty if you have none. "Days" = days of maintenance your GMT covers, as on GoMining's Maintenance Discount page (counted after your VIP, service and mining-mode discounts, before the token discount). Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
   </div>
 
 </div>
@@ -427,16 +427,16 @@ footer{
     <h2>The Flywheel's Targets</h2>
     <div class="row2">
       <div class="field">
-        <label>Locked Days</label>
+        <label>Locked Days <b id="tradLockedGmt">—</b></label>
         <input type="number" id="tradLocked" value="360" step="1" min="0" oninput="calc()">
       </div>
       <div class="field">
-        <label>Unlocked Days</label>
+        <label>Unlocked Days <b id="tradUnlockedGmt">—</b></label>
         <input type="number" id="tradUnlocked" value="140" step="1" min="0" oninput="calc()">
       </div>
     </div>
     <div class="field">
-      <label>Unlocked While Building</label>
+      <label>Unlocked While Building <b id="tradKeepGmt">—</b></label>
       <input type="number" id="tradKeep" value="14" step="1" min="0" oninput="calc()">
       <div class="subtle">Until the locked side reaches its target, keep only about this many days unlocked (DracoF: 14) and lock the rest for the maximum period.</div>
     </div>
@@ -527,17 +527,17 @@ price cushion = 1 − 360 ÷ total days      (how far GMT can fall before total 
     <h2>Targets &amp; Market</h2>
     <div class="row2">
       <div class="field">
-        <label>Locked Days</label>
+        <label>Locked Days <b id="modLockedGmt">—</b></label>
         <input type="number" id="modLocked" value="400" step="1" min="0" oninput="calc()">
       </div>
       <div class="field">
-        <label>Unlocked Days</label>
+        <label>Unlocked Days <b id="modUnlockedGmt">—</b></label>
         <input type="number" id="modUnlocked" value="100" step="1" min="0" oninput="calc()">
       </div>
     </div>
     <div class="row2">
       <div class="field">
-        <label>Unlocked Floor <b>days</b></label>
+        <label>Unlocked Floor <b id="modMinGmt">—</b></label>
         <input type="number" id="modMin" value="50" step="1" min="0" oninput="calc()">
         <div class="subtle">The lowest buffer worth running when a deal justifies it (Audacity: 50).</div>
       </div>
@@ -810,8 +810,8 @@ function usd(n){ return "$"+fmt(n,2); }
 // ---- Locked / liquid position: days and GMT are two views of one amount ----
 // positionBasis records which field the user typed in last. That field is the
 // source of truth; the other is derived from it (and rewritten) on every calc().
-// Default is 'days', matching GoMining's Maintenance Discount page.
-const positionBasis = {locked:'days', liquid:'days'};
+// Default is 'gmt': the boxes are what you hold, and the days are worked out from it.
+const positionBasis = {locked:'gmt', liquid:'gmt'};
 function setBasis(which, source){
   positionBasis[which] = source;
   calc();
@@ -1148,6 +1148,11 @@ function renderModified(S){
   const dayTxt = d => fmt(d,0)+' days';
   const gmtTxt = d => fmt(gmt(d),0)+' GMT';
 
+  const eq = days => dm > 0 ? '= '+fmt(gmt(days),0)+' GMT' : '—';
+  $('modLockedGmt').textContent = eq(M.lockedTarget);
+  $('modUnlockedGmt').textContent = eq(M.unlockedTarget);
+  $('modMinGmt').textContent = eq(M.minUnlocked);
+
   const profit = M.btcPrice >= M.btcCutoff;
   const bonus = reinvestBonus(S.d3*100);
   const routes = thRoutes({ask: M.thPrice, discount: M.marketDiscount, bonus});
@@ -1298,7 +1303,11 @@ function renderTraditional(S){
   const dayTxt = d => fmt(d,0)+' days';
   const gmtTxt = d => fmt(gmt(d),0)+' GMT';
 
-  // derived targets shown next to the inputs
+  // derived targets shown next to the inputs (each target's worth in GMT at today's price)
+  const eq = days => dm > 0 ? '= '+fmt(gmt(days),0)+' GMT' : '—';
+  $('tradLockedGmt').textContent = eq(T.lockedTarget);
+  $('tradUnlockedGmt').textContent = eq(T.unlockedTarget);
+  $('tradKeepGmt').textContent = eq(T.buildKeep);
   $('tradTotalTarget').textContent = fmt(plan.totalTarget,0)+' days';
   $('tradBuyTrigger').textContent = 'above '+fmt(plan.buyTrigger,0)+' days';
   $('tradSellTrigger').textContent = 'below '+fmt(plan.sellTrigger,0)+' days';

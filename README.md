@@ -14,7 +14,7 @@ The page opens on **Traditional**. The open tab is kept in the URL (`#traditiona
 
 ## The shared inputs (above the tabs)
 
-Farm & market (TH, efficiency, GMT price, power rate, service constant), the maintenance discount stack, and your GMT position (as days or GMT; locked and liquid). Every tab reads the same numbers, so you enter them once.
+Farm & market (TH, efficiency, GMT price, power rate, service constant), the maintenance discount stack, and **My GMT Position**: the GMT you actually hold, locked and liquid (or the same amounts as days of maintenance cover; type either and the other updates). The boxes start empty, so a new visitor sees what they need to acquire. Each target on the Traditional and Modified tabs shows its worth in GMT next to it. Every tab reads the same numbers, so you enter them once.
 
 ## What the OPEX 125% tab does
 
