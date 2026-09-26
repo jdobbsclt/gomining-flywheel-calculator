@@ -1,10 +1,22 @@
-# GoMining Flywheel — GMT Lock Calculator
+# GoMining Flywheel Calculators
 
-A single-page, no-build calculator for [GoMining](https://gomining.com) miners running the **Flywheel Strategy** (originally written up by u/DracoF on [r/gomining](https://www.reddit.com/r/gomining/)), extended to a "125% OPEX coverage" target: how much GMT do you need locked so the lock dividends alone cover your weekly electricity + service costs?
+Single-page, no-build calculators for [GoMining](https://gomining.com) miners planning a **Flywheel**, in three tabs that share the same farm and GMT inputs:
+
+- **Traditional GMT Flywheel** — the rules-based strategy by u/DracoF ([write-up](https://www.reddit.com/r/gomining/comments/1sbqys5/the_flywheel_strategy/)): a status headline and this week's action, a weekly checklist, and the GMT and dollars needed to build 360 locked / 140 unlocked days (described below).
+- **Modified Flywheel** — the variation by u/InterestingEngine146, "Audacity" ([write-up](https://www.reddit.com/r/GoMiningDiscussion/comments/1uxjlnh/a_modified_flywheel/)): 400 locked / 100 unlocked days, buy TH on the marketplace with GMT instead of reinvesting directly, and a BTC cutoff that switches between accumulating and profit-taking (described below).
+- **OPEX 125% Flywheel** — how much GMT do you need locked so the lock dividends alone cover your weekly electricity + service costs? (The original calculator; described below.)
+
+The page opens on **Traditional**. The open tab is kept in the URL (`#traditional`, `#modified`, `#opex`), so a tab can be linked to.
+
+**Colors in every Results panel:** a GMT category you meet or exceed is **green**; one that is under its required amount is **red**. Anything that is only information stays neutral.
 
 **[Live site →](https://jdobbsclt.github.io/gomining-flywheel-calculator/)**
 
-## What it does
+## The shared inputs (above the tabs)
+
+Farm & market (TH, efficiency, GMT price, power rate, service constant), the maintenance discount stack, and your GMT position (as days or GMT; locked and liquid). Every tab reads the same numbers, so you enter them once.
+
+## What the OPEX 125% tab does
 
 You enter your hashpower, efficiency, power/service costs, your VIP tier and service streak, and the GMT you hold **locked** and **liquid** (as "days covered" from GoMining's Maintenance Discount page, or as GMT — whichever you edit last is kept and the other is derived). The calculator then works out:
 
@@ -50,6 +62,32 @@ APR           = (365 ÷ 7) × weekly_reward ÷ GMT_locked
 More GMT locked means more of the pool but also more dilution of your own share, so the APR falls as a lock grows (about 22.7% for a small max lock, ~22.1% at 5M GMT, ~21.5% at 10M). A lock's votes also **decay weekly** unless you re-extend it — this tool assumes you keep it at the period you choose.
 
 **Required lock.** Holding more GMT raises your token discount, which lowers your costs, which lowers the lock you need. So the calculator tries every token-discount tier (0–20%) and reports the smallest lock that works. This was checked against an independent brute-force search over thousands of random scenarios (identical to within 0.000003%).
+
+## The Traditional GMT Flywheel tab
+
+Implements DracoF's rules: lock 360 days of GMT at the maximum period, keep 140 days liquid (500 in total); reinvest in GMT while building and below 500 total days, and in TH or BTC above; optional triggers to buy miners above 640 days and sell extra miners below 360. It reads your shared farm and GMT inputs, and its **Results** use the same format as the OPEX tab (a headline answer, four stat cards, a progress bar and a table):
+
+- **Headline:** which stage you are in (building the locked side, filling the unlocked buffer, built, or above the trading trigger) and what to do about it, with your total days against the 500-day target.
+- **Stat cards:** locked days and unlocked days against their targets, the **GMT to acquire** to satisfy both (unlocked GMT can be locked but locked GMT cannot be unlocked, so this is the fewest extra days of GMT that meets both targets), and the **price cushion**: how far the GMT price can fall before your total days drop under 360 and you lose the 20% token discount. Maintenance is priced in dollars, so your days shrink in step with the GMT price.
+- **Table:** GMT and dollars for each target, what you hold, and the gap, plus GoMining's 2.25% reinvest fee if you build by reinvesting BTC earnings into GMT.
+- **Weekly checklist:** re-max the lock, check your days, top up the lock, set the reinvest strategy, and the optional buy/sell triggers.
+- The targets (360 / 140 / 14 unlocked while building) are editable.
+
+## The Modified Flywheel tab
+
+Implements Audacity's variation, in the same Results format (headline, four stat cards, progress bar, tables):
+
+- **Targets:** 400 locked / 100 unlocked days by default, with an unlocked floor (default 50) below which the buffer is too thin. All editable.
+- **Phase headline:** compares the BTC price with your **BTC cutoff** (default $100,000, your own assumption). Below it: *accumulation*, keep reinvesting into GMT and TH. At or above it: *profit-taking*. The BTC price loads live from CoinGecko and can be overridden.
+- **Buying TH:** compares reinvesting directly at GoMining's ask (with the VIP bonus: +5% from Silver I, +10% from Diamond I) with buying listed TH on the marketplace using GMT, at a discount below the ask and after GoMining's 2.25% reinvest fee:
+
+  ```
+  direct      TH per $ = (1 + VIP bonus) ÷ ask
+  marketplace TH per $ = (1 − 0.0225) ÷ (ask × (1 − marketplace discount))
+  ```
+
+  At a 20% discount and a 5% VIP bonus this gives about 16.4% more TH, which reproduces Audacity's "about 15% more" once the fee is included. The ask price is estimated from efficiency ($12.53 at 15 W/TH plus $2.67 per W/TH of upgrade, from Audacity's July 2026 numbers, about $20.54 at 12 W/TH) and can be overwritten.
+- **Greedy Machines:** the years of free weekly TH growth needed to pay back a premium over the market price: `ln(1 + premium) ÷ (52 × ln(1 + weekly growth))`. At 0.16% a week, a 20% premium needs about 2.2 years, 30% about 3.2 and 50% about 4.9 (the extra TH also needs more maintenance, so the real break-even is longer).
 
 ## The automatically-updated files
 

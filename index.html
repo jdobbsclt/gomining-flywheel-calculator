@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>GMT Lock Calculator — 125% OPEX Flywheel</title>
+<title>GMT Flywheel Calculators — Traditional, Modified &amp; OPEX 125%</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 :root{
@@ -221,17 +221,77 @@ footer{
   margin-top:20px;padding-top:14px;border-top:1px solid var(--border);
   font-size:11px;color:var(--dim);
 }
+
+/* Tabs */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px 0;}
+.tab{
+  background:var(--panel);border:1px solid var(--border);color:var(--dim);
+  padding:10px 16px;border-radius:10px;font:inherit;font-size:14px;font-weight:600;
+  cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;text-align:left;
+}
+.tab .by{font-size:11px;font-weight:400;color:var(--dim);margin-top:1px;}
+.tab:hover{color:var(--text);border-color:var(--copper);}
+.tab[aria-selected="true"]{color:var(--text);border-color:var(--amber);background:var(--panel2);box-shadow:inset 0 -3px 0 var(--amber);}
+.tab:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+.tab-panel{margin-top:16px;}
+.tab-panel[hidden]{display:none;}
+.coming p{margin:0 0 10px 0;font-size:13px;color:var(--dim);max-width:760px;}
+.coming a, footer a{color:var(--amber);text-decoration:none;}
+.coming a:hover, footer a:hover{text-decoration:underline;}
+.chip{
+  display:inline-block;margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;
+  letter-spacing:0.5px;text-transform:uppercase;font-weight:600;
+  background:rgba(226,149,47,0.15);color:var(--amber);vertical-align:middle;
+}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 2px;border-bottom:1px solid var(--border);}
+.kv:last-of-type{border-bottom:none;}
+.kv span{color:var(--dim);}
+.kv b{font-family:var(--mono);font-weight:600;}
+@media(max-width:520px){.tab{flex:1 1 100%;}}
+
+.subtle.warn{color:var(--amber);}
+.checklist{list-style:none;margin:0 0 10px 0;padding:0;}
+.checklist li{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.checklist li:last-child{border-bottom:none;}
+.checklist b{font-weight:600;}
+.checklist .subtle{margin-top:2px;}
+.ck{flex:0 0 10px;width:10px;height:10px;border-radius:50%;margin-top:5px;background:var(--dim);}
+.ck.ok{background:var(--green);}
+.ck.todo{background:var(--amber);}
+.ck.info{background:var(--copper);}
+
+#posPanel{grid-column:1/-1;}
+.posgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:860px){.posgrid{grid-template-columns:1fr 1fr;}}
+@media(max-width:420px){.posgrid{grid-template-columns:1fr;}}
+
+/* Results colouring: green = you meet/exceed the GMT target, red = you are under it */
+.stat .val.ok, .headline .hval.ok, td.ok{color:var(--green);}
+.stat .val.bad, .headline .hval.bad, td.bad{color:var(--red);}
+.headline.ok{border-color:var(--green);}
+.headline.bad{border-color:var(--red);}
+.headline.ok .htxt h3{color:var(--green);}
+.headline.bad .htxt h3{color:var(--red);}
+.gap-bar-fill{background:var(--red);}
+.gap-bar-fill.over{background:var(--green);}
+.tag.short{background:rgba(209,79,67,0.15);color:var(--red);}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <h1>GMT Lock <span>Calculator</span></h1>
-  <p>How much GMT do you need locked to hit a 125% OPEX self-sufficiency target? Enter your hashpower, efficiency and the GMT you hold locked and liquid: the calculator works out your token discount and GoMining's lock rewards, and tells you how much to lock. Defaults show a fully-built Flywheel (360 locked / 140 liquid days).</p>
+  <h1>GMT Flywheel <span>Calculators</span></h1>
+  <p>Plan a GoMining Flywheel three ways. Enter your farm and your GMT once below; each tab applies a different strategy to the same numbers. Defaults show a fully-built Flywheel (360 locked / 140 liquid days).</p>
 </header>
 
-<div class="grid">
+<div class="tabs" role="tablist" aria-label="Flywheel calculators">
+  <button class="tab" role="tab" id="tab-traditional" aria-controls="panel-traditional" aria-selected="true">Traditional GMT Flywheel<span class="by">by DracoF</span></button>
+  <button class="tab" role="tab" id="tab-modified" aria-controls="panel-modified" aria-selected="false" tabindex="-1">Modified Flywheel<span class="by">by Audacity</span></button>
+  <button class="tab" role="tab" id="tab-opex" aria-controls="panel-opex" aria-selected="false" tabindex="-1">OPEX 125% Flywheel<span class="by">lock enough to cover your costs</span></button>
+</div>
+
+<div class="grid" id="sharedGrid">
 
   <!-- FARM & MARKET -->
   <div class="panel">
@@ -334,9 +394,9 @@ footer{
   </div>
 
   <!-- POSITION -->
-  <div class="panel">
+  <div class="panel" id="posPanel">
     <h2>GMT Position</h2>
-    <div class="row2">
+    <div class="posgrid">
       <div class="field">
         <label>Locked Days <b id="lockedDaysOut">360</b></label>
         <input type="number" id="lockedDays" value="360" step="1" oninput="setBasis('locked','days')">
@@ -345,8 +405,6 @@ footer{
         <label>Liquid Days <b id="liquidDaysOut">140</b></label>
         <input type="number" id="liquidDays" value="140" step="1" oninput="setBasis('liquid','days')">
       </div>
-    </div>
-    <div class="row2">
       <div class="field">
         <label>Locked GMT <b id="lockedGmtOut">—</b></label>
         <input type="number" id="lockedGmt" step="1" min="0" oninput="setBasis('locked','gmt')">
@@ -358,6 +416,252 @@ footer{
     </div>
     <div class="subtle">"Days" = days of maintenance your GMT covers, as on GoMining's Maintenance Discount page (counted after your VIP, service and mining-mode discounts, before the token discount). Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
   </div>
+
+</div>
+
+<section class="tab-panel" role="tabpanel" id="panel-traditional" aria-labelledby="tab-traditional">
+<div class="grid">
+
+  <!-- TARGETS -->
+  <div class="panel">
+    <h2>The Flywheel's Targets</h2>
+    <div class="row2">
+      <div class="field">
+        <label>Locked Days</label>
+        <input type="number" id="tradLocked" value="360" step="1" min="0" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Unlocked Days</label>
+        <input type="number" id="tradUnlocked" value="140" step="1" min="0" oninput="calc()">
+      </div>
+    </div>
+    <div class="field">
+      <label>Unlocked While Building</label>
+      <input type="number" id="tradKeep" value="14" step="1" min="0" oninput="calc()">
+      <div class="subtle">Until the locked side reaches its target, keep only about this many days unlocked (DracoF: 14) and lock the rest for the maximum period.</div>
+    </div>
+    <div class="kv"><span>Total target</span><b id="tradTotalTarget">—</b></div>
+    <div class="kv"><span>Optional: buy miners when total is</span><b id="tradBuyTrigger">—</b></div>
+    <div class="kv"><span>Optional: sell extra miners when total is</span><b id="tradSellTrigger">—</b></div>
+    <div class="subtle">Defaults are DracoF's 360 locked / 140 unlocked = 500 days. "Days" are GoMining's maintenance days for your farm, as on the Maintenance Discount page.</div>
+  </div>
+
+  <!-- WEEKLY CHECKLIST -->
+  <div class="panel">
+    <h2>Weekly Checklist</h2>
+    <ul class="checklist" id="tradChecklist"></ul>
+    <div class="subtle">DracoF's advice: decide no more than once a week, on the day your lock dividends arrive (usually Tuesday).</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel results">
+    <h2>Results</h2>
+
+    <div class="headline" id="tradHeadline">
+      <div class="htxt">
+        <h3 id="tradHeadTitle">—</h3>
+        <p id="tradSub">—</p>
+      </div>
+      <div class="hval" id="tradHval"><span id="tradHeadVal">—</span><span class="unit"> days</span></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="lbl">Locked Days (target)</div>
+        <div class="val" id="tradLockedStat">—</div>
+        <div class="sub" id="tradLockedSub">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Unlocked Days (target)</div>
+        <div class="val" id="tradUnlockedStat">—</div>
+        <div class="sub" id="tradUnlockedSub">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">GMT to Acquire</div>
+        <div class="val" id="tradAcquire">—</div>
+        <div class="sub" id="tradAcquireSub">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Price Cushion</div>
+        <div class="val" id="tradCushion">—</div>
+        <div class="sub" id="tradCushionSub">—</div>
+      </div>
+    </div>
+
+    <div class="gap-bar-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:4px;">
+        <span>Total days: now vs. target</span>
+        <span id="tradGapLabel">—</span>
+      </div>
+      <div class="gap-bar"><div class="gap-bar-fill" id="tradGapBar" style="width:0%;"></div></div>
+    </div>
+
+    <div class="table-wrap"><table class="compare-table">
+      <tr><th>Target</th><th>Days</th><th>GMT · USD at today's price</th><th>You hold</th><th>Gap</th></tr>
+      <tbody id="tradBuildRows"></tbody>
+    </table></div>
+    <div class="subtle" id="tradFeeNote"></div>
+  </div>
+
+  <details class="formula">
+    <summary>Formula reference</summary>
+    <div class="formula-body">
+      <h4>The rules (DracoF's Flywheel)</h4>
+      <code>lock GMT worth 360 days for the maximum period; keep 140 days liquid; total 500
+below 500 total days, or while building: reinvest in GMT.   above 500: reinvest in TH or take BTC
+above 640 total days (optional): buy miners with unlocked GMT.   below 360: sell extra miners</code>
+      <h4>Days, GMT and the price cushion</h4>
+      <code>days = GMT ÷ (daily maintenance after your VIP, service and mining-mode discounts)
+price cushion = 1 − 360 ÷ total days      (how far GMT can fall before total days drop under 360)</code>
+      <p style="margin:6px 0 0 0;">Maintenance is priced in dollars, so your days shrink in step with the GMT price; the unlocked buffer exists to keep the 20% token discount through a fall. The GMT to acquire is the fewest extra days of GMT that satisfy both targets, since unlocked GMT can be locked but locked GMT cannot be unlocked.</p>
+    </div>
+  </details>
+
+</div>
+</section>
+<section class="tab-panel" role="tabpanel" id="panel-modified" aria-labelledby="tab-modified" hidden>
+<div class="grid">
+
+  <!-- TARGETS & MARKET -->
+  <div class="panel">
+    <h2>Targets &amp; Market</h2>
+    <div class="row2">
+      <div class="field">
+        <label>Locked Days</label>
+        <input type="number" id="modLocked" value="400" step="1" min="0" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Unlocked Days</label>
+        <input type="number" id="modUnlocked" value="100" step="1" min="0" oninput="calc()">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Unlocked Floor <b>days</b></label>
+        <input type="number" id="modMin" value="50" step="1" min="0" oninput="calc()">
+        <div class="subtle">The lowest buffer worth running when a deal justifies it (Audacity: 50).</div>
+      </div>
+      <div class="field">
+        <label>Marketplace Discount <b>%</b></label>
+        <input type="number" id="mktDiscount" value="20" step="1" min="0" max="95" oninput="calc()">
+        <div class="subtle">How far below GoMining's ask listed TH usually sells (Audacity: 20%+).</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>BTC Price <b>$</b></label>
+        <input type="number" id="btcPrice" value="84000" step="100" min="0" oninput="onBtcInput()">
+        <div class="subtle" id="btcStatus">Fetching live price…</div>
+      </div>
+      <div class="field">
+        <label>BTC Cutoff <b>$</b></label>
+        <input type="number" id="btcCutoff" value="100000" step="1000" min="0" oninput="calc()">
+        <div class="subtle">Above this, stop buying TH and start taking profits. Audacity's own line is $100k; set yours.</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>TH Ask Price <b>$/TH</b></label>
+        <input type="number" id="thPrice" value="12.53" step="0.01" min="0" oninput="onThPriceInput()">
+        <div class="subtle" id="thPriceNote"></div>
+        <div class="subtle">GoMining's price for new TH at your efficiency. Estimated from Audacity's July 2026 numbers ($12.53 at 15 W/TH plus $2.67 per W/TH of upgrade, about $20.54 at 12 W/TH). Type GoMining's current price to replace it.</div>
+      </div>
+      <div class="field">
+        <label>Greedy Machine Growth <b>%/week</b></label>
+        <input type="number" id="greedyGrowth" value="0.16" step="0.01" min="0" oninput="calc()">
+        <div class="subtle">Free weekly TH growth (DracoF: about 0.16%, or 8.7% a year).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDACITY'S PLAN -->
+  <div class="panel">
+    <h2>Audacity's Plan</h2>
+    <ul class="checklist" id="modChecklist"></ul>
+    <div class="subtle">Buy into weakness, sell into strength. Not financial advice: the cutoff and the discounts are assumptions you set.</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel results">
+    <h2>Results</h2>
+
+    <div class="headline" id="modHeadline">
+      <div class="htxt">
+        <h3 id="modHeadTitle">—</h3>
+        <p id="modSub">—</p>
+      </div>
+      <div class="hval" id="modHval"><span id="modHeadVal">—</span><span class="unit"> days</span></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="lbl">Locked Days (target)</div>
+        <div class="val" id="modLockedStat">—</div>
+        <div class="sub" id="modLockedSub">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Unlocked Days (target)</div>
+        <div class="val" id="modUnlockedStat">—</div>
+        <div class="sub" id="modUnlockedSub">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">GMT to Acquire</div>
+        <div class="val" id="modAcquire">—</div>
+        <div class="sub" id="modAcquireSub">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">BTC vs Your Cutoff</div>
+        <div class="val" id="modBtcStat">—</div>
+        <div class="sub" id="modBtcSub">—</div>
+      </div>
+    </div>
+
+    <div class="gap-bar-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:4px;">
+        <span>Total days: now vs. target</span>
+        <span id="modGapLabel">—</span>
+      </div>
+      <div class="gap-bar"><div class="gap-bar-fill" id="modGapBar" style="width:0%;"></div></div>
+    </div>
+
+    <div class="table-wrap"><table class="compare-table">
+      <tr><th>Target</th><th>Days</th><th>GMT · USD at today's price</th><th>You hold</th><th>Gap</th></tr>
+      <tbody id="modBuildRows"></tbody>
+    </table></div>
+
+    <div class="table-wrap"><table class="compare-table">
+      <tr><th>Buying TH with your earnings</th><th>Price per TH</th><th>GMT per TH</th><th>TH per $100</th><th>Marketplace advantage</th></tr>
+      <tbody id="modThRows"></tbody>
+    </table></div>
+
+    <div class="table-wrap"><table class="compare-table">
+      <tr><th>Greedy Machine premium</th><th>Years of free growth to break even</th></tr>
+      <tbody id="modGreedyRows"></tbody>
+    </table></div>
+    <div class="subtle" id="modGreedyNote"></div>
+  </div>
+
+  <details class="formula">
+    <summary>Formula reference</summary>
+    <div class="formula-body">
+      <h4>The split (Audacity's Modified Flywheel)</h4>
+      <code>hold 400 days locked (max period) and 100 days unlocked (as low as 50 for a good deal)
+the days, GMT to acquire and stage are worked out exactly as on the Traditional tab</code>
+      <h4>TH per $1 of earnings</h4>
+      <code>direct:       (1 + VIP bonus) ÷ GoMining ask
+marketplace:  (1 − 2.25% GMT reinvest fee) ÷ (ask × (1 − marketplace discount))</code>
+      <p style="margin:6px 0 0 0;">The VIP bonus is +5% from Silver I and +10% from Diamond I; GoMining charges a 2.25% fee when earnings are reinvested into GMT, and sellers (not buyers) pay the 5% marketplace fee. With a 20% discount, a 5% bonus and the 2.25% fee the marketplace gives about 16% more TH, matching the write-up's "about 15%".</p>
+      <h4>Greedy Machine break-even</h4>
+      <code>years = ln(1 + premium) ÷ (52 × ln(1 + weekly growth))
+TH growth after n years = (1 + weekly growth)^(52 n) − 1</code>
+      <p style="margin:6px 0 0 0;">This ignores the extra maintenance the growing TH needs, so the real break-even is longer. The BTC cutoff is a personal rule, not a prediction.</p>
+    </div>
+  </details>
+
+</div>
+</section>
+<section class="tab-panel" role="tabpanel" id="panel-opex" aria-labelledby="tab-opex" hidden>
+<div class="grid">
 
   <!-- TARGET & LOCK -->
   <div class="panel">
@@ -380,6 +684,11 @@ footer{
       </select>
       <div class="subtle">Votes = GMT locked × time left ÷ 4 years. A lock's votes decay weekly unless you re-extend it, and this model assumes you keep it at this period.</div>
     </div>
+  </div>
+
+  <!-- LOCK REWARDS MODEL -->
+  <div class="panel">
+    <h2>Lock Rewards</h2>
     <div class="row2">
       <div class="field">
         <label>All Lockers' Votes <b id="votesOut">—</b></label>
@@ -401,12 +710,12 @@ footer{
   <div class="panel results">
     <h2>Results</h2>
 
-    <div class="headline">
+    <div class="headline" id="opexHeadline">
       <div class="htxt">
         <h3>Required Locked GMT</h3>
         <p id="reqLockedSub">—</p>
       </div>
-      <div class="hval"><span id="reqLockedHead">—</span><span class="unit"> GMT</span></div>
+      <div class="hval" id="opexHval"><span id="reqLockedHead">—</span><span class="unit"> GMT</span></div>
     </div>
 
     <div class="stat-grid">
@@ -482,9 +791,11 @@ required_locked = the smallest L_k</code>
   </details>
 
 </div>
+</section>
+</div>
 
 <footer>
-  Not financial advice. Maintenance formulas were reverse-engineered from real GoMining account screenshots and cross-checked against a real daily income history. The lock-rewards model is fitted to GoMining's own in-app Lock Calculator (within 0.01%), using its weekly reward pool and total votes, which move every week; the token-discount tiers come from GoMining's documentation. Rewards decay weekly unless a lock is re-extended, and this tool assumes it is. GMT/USD price is pulled live from CoinGecko on load and can be overridden manually. Inspired by the Flywheel Strategy write-up by u/DracoF on r/gomining.
+  Not financial advice. Maintenance formulas were reverse-engineered from real GoMining account screenshots and cross-checked against a real daily income history. The lock-rewards model is fitted to GoMining's own in-app Lock Calculator (within 0.01%), using its weekly reward pool and total votes, which move every week; the token-discount tiers come from GoMining's documentation. Rewards decay weekly unless a lock is re-extended, and this tool assumes it is. GMT/USD price is pulled live from CoinGecko on load and can be overridden manually. The Flywheel strategy is by u/DracoF (<a href="https://www.reddit.com/r/gomining/comments/1sbqys5/the_flywheel_strategy/" target="_blank" rel="noopener noreferrer">write-up</a>); the Modified Flywheel is by u/InterestingEngine146, "Audacity" (<a href="https://www.reddit.com/r/GoMiningDiscussion/comments/1uxjlnh/a_modified_flywheel/" target="_blank" rel="noopener noreferrer">write-up</a>).
 </footer>
 
 </div>
@@ -512,6 +823,7 @@ function roundForInput(n, decimals){
 // ---- Live GMT/USD price (CoinGecko) ----
 const GMT_COINGECKO_ID = 'gmt-token';
 let liveGmtPrice = null;
+let liveBtcPrice = null;
 let liveGmtFetchedAt = null;
 let gmtPriceManual = false;
 
@@ -528,11 +840,18 @@ async function fetchLiveGmtPrice(){
   const statusEl = document.getElementById('gmtPriceStatus');
   if(statusEl) statusEl.textContent = 'Fetching live price…';
   try{
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+GMT_COINGECKO_ID+'&vs_currencies=usd&include_last_updated_at=true');
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+GMT_COINGECKO_ID+',bitcoin&vs_currencies=usd&include_last_updated_at=true');
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     const entry = data[GMT_COINGECKO_ID];
     if(!entry || typeof entry.usd !== 'number') throw new Error('no price in response');
+    const btcEntry = data.bitcoin;
+    if(btcEntry && inRange(btcEntry.usd, 1000, 1e7)){
+      liveBtcPrice = btcEntry.usd;
+      if(!btcManual){ document.getElementById('btcPrice').value = liveBtcPrice.toFixed(0); setBtcStatus('Live via CoinGecko.', false); }
+    }else if(!btcManual){
+      setBtcStatus('⚠ Live BTC price unavailable — using $'+fmt(BTC_DEFAULT,0)+' as of '+BTC_DEFAULT_AS_OF+'.', true);
+    }
     liveGmtPrice = entry.usd;
     liveGmtFetchedAt = entry.last_updated_at ? entry.last_updated_at*1000 : Date.now();
     gmtPriceManual = false;
@@ -540,6 +859,7 @@ async function fetchLiveGmtPrice(){
     calc();
     updateGmtPriceStatus();
   }catch(err){
+    if(!btcManual && liveBtcPrice === null) setBtcStatus('⚠ Live BTC price unavailable — using $'+fmt(BTC_DEFAULT,0)+' as of '+BTC_DEFAULT_AS_OF+'. Type your own.', true);
     if(statusEl){
       statusEl.innerHTML = 'Live price unavailable — enter manually. <a href="#" onclick="fetchLiveGmtPrice();return false;">Retry</a>';
     }
@@ -712,23 +1032,380 @@ function compact(n){
   return fmt(n,0);
 }
 
-function calc(){
-  const th = parseFloat(document.getElementById('th').value)||0;
-  const watt = parseFloat(document.getElementById('watt').value)||0;
-  const gmtPrice = parseFloat(document.getElementById('gmtPrice').value)||0.0001;
-  const kwh = parseFloat(document.getElementById('kwh').value)||0;
-  const svcConst = parseFloat(document.getElementById('svcConst').value)||0;
+// ---- Results colouring + shared table helper ------------------------------------------------
+// Every results card that measures a category of GMT is green when you meet or exceed the target
+// and red when you are under it. `ok` is true / false, or null for "no verdict" (left neutral).
+function setState(el, ok){
+  el.classList.toggle('ok', ok === true);
+  el.classList.toggle('bad', ok === false);
+}
+function setHead(headlineId, hvalId, ok){
+  setState(document.getElementById(headlineId), ok);
+  setState(document.getElementById(hvalId), ok);
+}
+function tdc(text, ok){
+  return '<td'+(ok === true ? ' class="ok"' : (ok === false ? ' class="bad"' : ''))+'>'+text+'</td>';
+}
 
-  const d2 = parseFloat(document.getElementById('d2').value)/100;
-  const d3 = parseFloat(document.getElementById('d3').value)/100;
-  const d4 = parseFloat(document.getElementById('d4').value)/100;
+// Targets vs what you hold, as table rows (used by the Traditional and Modified tabs).
+function fillBuildRows(tbodyId, lockedTarget, unlockedTarget, S){
+  const {dm, gmtPrice, lockedGMT, liquidGMT, totalGmt} = S;
+  const totalTarget = lockedTarget + unlockedTarget;
+  const row = (label, tgtDays, held) => {
+    const tgtGmt = tgtDays*dm;
+    const gap = Math.max(0, tgtGmt - held);
+    const verdict = dm > 0 ? held >= tgtGmt - 0.5 : null;
+    return '<tr><td style="font-family:var(--sans);">'+label+'</td><td>'+fmt(tgtDays,0)+'</td><td>'+fmt(tgtGmt,0)+' GMT · '+usd(tgtGmt*gmtPrice)+'</td>'
+      + tdc(fmt(held,0)+' GMT', verdict)
+      + tdc(gap > 0.5 ? fmt(gap,0)+' GMT' : '—', dm > 0 ? gap <= 0.5 : null)+'</tr>';
+  };
+  document.getElementById(tbodyId).innerHTML =
+      row('Locked (max period)', lockedTarget, lockedGMT)
+    + row('Unlocked buffer', unlockedTarget, liquidGMT)
+    + row('Total', totalTarget, totalGmt);
+}
+
+// ---- Modified Flywheel (Audacity): calculations ---------------------------------------------
+// Ideas from the write-up: a 400 locked / 100 unlocked split (the buffer can run as low as 50 for a
+// good deal); buy TH on the marketplace (typically 20%+ below GoMining's ask) instead of reinvesting
+// directly; stop buying TH and start taking profits once BTC passes a cutoff you choose (his: $100k);
+// and check whether a Greedy Machine's price premium is worth its free weekly growth.
+const GMT_REINVEST_FEE = 0.0225;             // GoMining's fee when earnings are reinvested into GMT
+const TH_PRICE_15W = 12.53, TH_PRICE_PER_WATT = 2.67;   // Audacity, July 2026: $12.53/TH at 15 W; a 15 -> 12 W upgrade is $2.67 per W per TH
+let thPriceManual = false;
+function thPriceEstimate(watt){ return TH_PRICE_15W + Math.max(0, 15 - watt)*TH_PRICE_PER_WATT; }
+
+// TH reinvest bonus by VIP tier (GoMining): +5% from Silver I (0.6% discount), +10% from Diamond I (3.0%).
+function reinvestBonus(vipPct){
+  if(vipPct >= 3.0 - 1e-9) return 0.10;
+  if(vipPct >= 0.6 - 1e-9) return 0.05;
+  return 0;
+}
+
+// TH bought per $1 of earnings, two routes. Direct: reinvest into TH at GoMining's ask with the VIP bonus.
+// Marketplace: reinvest into GMT (2.25% fee), then buy TH listed `discount` below the ask.
+function thRoutes(o){
+  const direct = o.ask > 0 ? (1 + o.bonus)/o.ask : 0;
+  const market = o.ask > 0 ? (1 - GMT_REINVEST_FEE)/(o.ask*(1 - o.discount)) : 0;
+  return {direct, market, advantage: direct > 0 ? market/direct - 1 : 0};
+}
+
+// Years of free weekly growth for a Greedy Machine to pay back its premium (before the extra maintenance
+// its growing TH needs), and the TH growth after `years`.
+function greedyBreakEven(premium, weeklyGrowth){
+  return weeklyGrowth > 0 ? Math.log(1 + premium)/(52*Math.log(1 + weeklyGrowth)) : Infinity;
+}
+function greedyGrowth(years, weeklyGrowth){
+  return Math.pow(1 + weeklyGrowth, 52*years) - 1;
+}
+
+function onThPriceInput(){
+  thPriceManual = true;
+  document.getElementById('thPriceNote').innerHTML = 'Manual entry — <a href="#" onclick="useThPriceEstimate();return false;">use the estimate</a>';
+  calc();
+}
+function useThPriceEstimate(){ thPriceManual = false; document.getElementById('thPriceNote').textContent = ''; calc(); }
+function syncModInputs(){
+  if(!thPriceManual){
+    const w = parseFloat(document.getElementById('watt').value);
+    document.getElementById('thPrice').value = thPriceEstimate(isFinite(w) && w > 0 ? w : 12).toFixed(2);
+  }
+}
+
+// ---- BTC price (shares CoinGecko with the GMT price) ------------------------------------------
+const BTC_DEFAULT = 84000, BTC_DEFAULT_AS_OF = '2026-09-26';
+let btcManual = false;
+function setBtcStatus(html, isWarn){
+  const el = document.getElementById('btcStatus');
+  if(!el) return;
+  el.innerHTML = html;                 // static text and our own link only; never fetched text
+  el.classList.toggle('warn', !!isWarn);
+}
+function onBtcInput(){
+  btcManual = true;
+  setBtcStatus('Manual entry — <a href="#" onclick="useLiveBtc();return false;">use live price</a>', false);
+  calc();
+}
+function useLiveBtc(){
+  btcManual = false;
+  if(typeof liveBtcPrice === 'number'){
+    document.getElementById('btcPrice').value = liveBtcPrice.toFixed(0);
+    setBtcStatus('Live via CoinGecko.', false);
+  }else{
+    fetchLiveGmtPrice();
+  }
+  calc();
+}
+
+function renderModified(S){
+  const $ = id => document.getElementById(id);
+  const {gmtPrice, dm, lockedGMT, liquidGMT, totalGmt} = S;
+  const lockedDays = S.position.locked.days, unlockedDays = S.position.liquid.days;
+  const M = S.mod;
+  const plan = traditionalPlan({lockedDays, unlockedDays, lockedTarget:M.lockedTarget, unlockedTarget:M.unlockedTarget, buildKeep:M.minUnlocked});
+  const gmt = days => days*dm;
+  const usdOf = days => days*dm*gmtPrice;
+  const dayTxt = d => fmt(d,0)+' days';
+  const gmtTxt = d => fmt(gmt(d),0)+' GMT';
+
+  const profit = M.btcPrice >= M.btcCutoff;
+  const bonus = reinvestBonus(S.d3*100);
+  const routes = thRoutes({ask: M.thPrice, discount: M.marketDiscount, bonus});
+  const advTxt = (routes.advantage >= 0 ? '+' : '−')+fmt(Math.abs(routes.advantage)*100,1)+'%';
+
+  // ---- headline: the answer ----
+  const title = $('modHeadTitle'), sub = $('modSub');
+  $('modHeadVal').textContent = fmt(plan.total,0)+' / '+fmt(plan.totalTarget,0);
+  if(dm <= 0){
+    title.textContent = 'Enter your farm';
+    sub.textContent = 'Add your hashpower and efficiency above to size your Flywheel.';
+  }else{
+    title.textContent = profit ? 'Profit-taking phase' : 'Accumulation phase';
+    const bits = [];
+    if(profit){
+      bits.push('BTC ($'+fmt(M.btcPrice,0)+') is at or above your $'+fmt(M.btcCutoff,0)+' cutoff: pause reinvesting into TH and pay yourself by taking profits in BTC. Consider selling higher-wattage (15 W+) miners as the market matures and keeping 12 W.');
+    }else{
+      bits.push('BTC ($'+fmt(M.btcPrice,0)+') is below your $'+fmt(M.btcCutoff,0)+' cutoff: keep accumulating. Reinvest earnings into GMT and buy TH on the marketplace'
+        + (routes.advantage > 0 ? ', which gets you about '+fmt(routes.advantage*100,1)+'% more TH than reinvesting directly.' : '.'));
+    }
+    if(plan.phase === 'lock'){
+      const stillNeed = plan.lockNeedDays - plan.lockNowDays;
+      bits.push('Locked side: '+dayTxt(lockedDays)+' of '+fmt(M.lockedTarget,0)+'.'
+        + (plan.lockNowDays > 0.5 ? ' Lock '+gmtTxt(plan.lockNowDays)+' now for the maximum period, keeping at least '+fmt(M.minUnlocked,0)+' days unlocked.' : '')
+        + (stillNeed > 0.5 ? ' Acquire '+gmtTxt(stillNeed)+' (≈ '+usd(usdOf(stillNeed))+') more.' : ''));
+    }else if(plan.phase === 'buffer'){
+      bits.push('Locked side is done ('+dayTxt(lockedDays)+'). Unlocked buffer: '+dayTxt(unlockedDays)+' of '+fmt(M.unlockedTarget,0)
+        + (unlockedDays >= M.minUnlocked ? ' (above your '+fmt(M.minUnlocked,0)+'-day floor)' : ' (below your '+fmt(M.minUnlocked,0)+'-day floor)')
+        + '. Add '+gmtTxt(plan.bufferNeedDays)+' (≈ '+usd(usdOf(plan.bufferNeedDays))+') to reach it.');
+    }else if(unlockedDays >= M.unlockedTarget){
+      bits.push('Your '+fmt(M.lockedTarget,0)+' / '+fmt(M.unlockedTarget,0)+' split is in place ('+dayTxt(plan.total)+').');
+    }else{
+      bits.push('You have '+dayTxt(plan.total)+' in total, but your unlocked buffer ('+dayTxt(unlockedDays)+') is below the '+fmt(M.unlockedTarget,0)+'-day target'
+        + (unlockedDays >= M.minUnlocked ? ', though above your '+fmt(M.minUnlocked,0)+'-day floor.' : ' and below your '+fmt(M.minUnlocked,0)+'-day floor.')
+        + ' Add '+gmtTxt(plan.bufferNeedDays)+' (≈ '+usd(usdOf(plan.bufferNeedDays))+') to reach it.');
+    }
+    sub.textContent = bits.join(' ');
+  }
+  setHead('modHeadline', 'modHval', dm > 0 ? plan.total >= plan.totalTarget : null);
+
+  // ---- stat cards ----
+  $('modLockedStat').textContent = fmt(lockedDays,0)+' / '+fmt(M.lockedTarget,0);
+  $('modLockedSub').innerHTML = lockedDays >= M.lockedTarget ? '<span class="tag met">target met</span>' : '<span class="tag short">'+fmt(plan.lockNeedDays,0)+' days short</span>';
+  $('modUnlockedStat').textContent = fmt(unlockedDays,0)+' / '+fmt(M.unlockedTarget,0);
+  $('modUnlockedSub').innerHTML = unlockedDays >= M.unlockedTarget ? '<span class="tag met">target met</span>' : '<span class="tag short">'+fmt(M.unlockedTarget-unlockedDays,0)+' days short</span>';
+  $('modAcquire').textContent = plan.acquireDays > 0.5 ? fmt(gmt(plan.acquireDays),0)+' GMT' : '0';
+  $('modAcquireSub').textContent = plan.acquireDays > 0.5 ? '≈ '+usd(usdOf(plan.acquireDays))+' at current price' : 'both targets covered';
+  $('modBtcStat').textContent = '$'+fmt(M.btcPrice,0);
+  $('modBtcSub').textContent = M.btcCutoff > 0 ? fmt(M.btcPrice/M.btcCutoff*100,0)+'% of your $'+fmt(M.btcCutoff,0)+' cutoff · '+(profit ? 'profit-taking' : 'accumulating') : '';
+  setState($('modLockedStat'), dm > 0 ? lockedDays >= M.lockedTarget : null);
+  setState($('modUnlockedStat'), dm > 0 ? unlockedDays >= M.unlockedTarget : null);
+  setState($('modAcquire'), dm > 0 ? plan.acquireDays <= 0.5 : null);
+
+  // ---- progress bar: total days vs target ----
+  const bar = $('modGapBar');
+  bar.style.width = (plan.totalTarget > 0 ? Math.min(100, plan.total/plan.totalTarget*100) : 100)+'%';
+  bar.classList.toggle('over', plan.total >= plan.totalTarget);
+  $('modGapLabel').textContent = plan.total >= plan.totalTarget
+    ? fmt(plan.total,0)+' / '+fmt(plan.totalTarget,0)+' days (target met)'
+    : fmt(plan.total,0)+' / '+fmt(plan.totalTarget,0)+' days ('+fmt(plan.totalTarget-plan.total,0)+' short)';
+
+  // ---- tables ----
+  fillBuildRows('modBuildRows', M.lockedTarget, M.unlockedTarget, S);
+  const per100 = v => fmt(v*100,2)+' TH';
+  const gmtPerTh = p => gmtPrice > 0 ? fmt(p/gmtPrice,1)+' GMT' : '—';
+  const marketPrice = M.thPrice*(1-M.marketDiscount);
+  $('modThRows').innerHTML =
+      '<tr><td style="font-family:var(--sans);">Reinvest directly (GoMining ask, +'+fmt(bonus*100,0)+'% VIP bonus)</td><td>'+usd(M.thPrice)+'</td><td>'+gmtPerTh(M.thPrice)+'</td><td>'+per100(routes.direct)+'</td><td>—</td></tr>'
+    + '<tr><td style="font-family:var(--sans);">Marketplace via GMT ('+fmt(M.marketDiscount*100,0)+'% below ask, '+fmt(GMT_REINVEST_FEE*100,2)+'% reinvest fee)</td><td>'+usd(marketPrice)+'</td><td>'+gmtPerTh(marketPrice)+'</td><td>'+per100(routes.market)+'</td>'+tdc(advTxt+' TH', routes.advantage > 0 ? true : (routes.advantage < 0 ? false : null))+'</tr>';
+
+  const g = M.growth;
+  const gRow = p => {
+    const be = greedyBreakEven(p, g);
+    return '<tr><td style="font-family:var(--sans);">'+fmt(p*100,0)+'% above the market price</td><td>'+(isFinite(be) ? fmt(be,1)+' years' : '—')+'</td></tr>';
+  };
+  $('modGreedyRows').innerHTML = gRow(0.20) + gRow(0.30) + gRow(0.50);
+  $('modGreedyNote').textContent = g > 0
+    ? 'At '+fmt(g*100,2)+'% a week a Greedy Machine grows its TH by '+fmt(greedyGrowth(1,g)*100,1)+'% in a year, '+fmt(greedyGrowth(2,g)*100,1)+'% in two and '+fmt(greedyGrowth(3,g)*100,1)+'% in three. Audacity: only worth it if you have the budget and a horizon of 3+ years. The growing TH also needs more maintenance, so the real break-even is longer.'
+    : 'Enter a weekly growth rate to see the break-even.';
+
+  // ---- the plan, as a checklist ----
+  const list = $('modChecklist'); list.replaceChildren();
+  ckItem(list, profit ? 'todo' : 'ok', profit ? 'Profit-taking: pause TH reinvestment' : 'Accumulating: keep buying', profit
+    ? 'BTC is at or above $'+fmt(M.btcCutoff,0)+'. Stop reinvesting into TH and pay yourself. Consider selling 15 W+ miners into strength; keep 12 W.'
+    : 'BTC is below $'+fmt(M.btcCutoff,0)+'. Buy into weakness: stack TH and GMT and lock for the discount and APR.');
+  ckItem(list, lockedDays >= M.lockedTarget ? 'ok' : 'todo', 'Hold '+fmt(M.lockedTarget,0)+' days locked',
+    lockedDays >= M.lockedTarget ? dayTxt(lockedDays)+' locked. Nothing to add.' : 'Lock '+gmtTxt(plan.lockNowDays)+' from your unlocked GMT now'+(plan.lockNeedDays > plan.lockNowDays+0.5 ? '; you still need '+gmtTxt(plan.lockNeedDays-plan.lockNowDays)+' more.' : '.'));
+  ckItem(list, unlockedDays >= M.unlockedTarget ? 'ok' : 'todo', 'Keep '+fmt(M.unlockedTarget,0)+' days unlocked (floor '+fmt(M.minUnlocked,0)+')',
+    unlockedDays >= M.unlockedTarget ? dayTxt(unlockedDays)+' unlocked.' : dayTxt(unlockedDays)+' unlocked: '+fmt(M.unlockedTarget-unlockedDays,0)+' days short of the target'+(unlockedDays >= M.minUnlocked ? ', but above your floor.' : ' and below your floor.'));
+  ckItem(list, 'info', 'Buy TH on the marketplace', 'Reinvest into GMT and buy listed TH '+fmt(M.marketDiscount*100,0)+'% below GoMining\'s ask: '+advTxt+' TH versus reinvesting directly (after the '+fmt(GMT_REINVEST_FEE*100,2)+'% GMT fee and your '+fmt(bonus*100,0)+'% VIP bonus).');
+  ckItem(list, 'info', 'Think twice about Greedy Machines', 'A 20% premium needs about '+fmt(greedyBreakEven(0.20, g),1)+' years of free growth to pay back; a 50% premium about '+fmt(greedyBreakEven(0.50, g),1)+'.');
+}
+
+
+// ---- Traditional Flywheel (DracoF): pure calculation + rendering ------------------------------
+// Rules from the write-up: lock 360 days of GMT (max period), keep 140 days liquid (500 in total);
+// reinvest in GMT while building and below 500 total days, in TH or BTC above; optional triggers at
+// total days above 640 (buy miners with unlocked GMT) and below 360 (sell extra miners). While
+// building, keep only about 14 days unlocked and lock the rest.
+
+// Which stage of the build you are in and what to do about it. Days are GoMining "days".
+function traditionalPlan(o){
+  const {lockedDays, unlockedDays, lockedTarget, unlockedTarget, buildKeep} = o;
+  const total = lockedDays + unlockedDays;
+  const totalTarget = lockedTarget + unlockedTarget;
+  const buyTrigger = totalTarget + unlockedTarget;        // 640 with the defaults
+  const sellTrigger = lockedTarget;                        // 360 with the defaults
+
+  let phase;
+  if(lockedDays < lockedTarget) phase = 'lock';
+  else if(total < totalTarget) phase = 'buffer';
+  else if(total > buyTrigger) phase = 'above';
+  else phase = 'built';
+
+  const lockNeedDays = Math.max(0, lockedTarget - lockedDays);
+  const lockableNowDays = Math.max(0, unlockedDays - buildKeep);
+  const lockNowDays = Math.min(lockNeedDays, lockableNowDays);
+  const bufferNeedDays = Math.max(0, unlockedTarget - unlockedDays);
+  // fewest extra days of GMT you must acquire to satisfy BOTH targets (liquid can be locked, locked cannot be unlocked)
+  const acquireDays = lockedDays >= lockedTarget ? bufferNeedDays : Math.max(0, totalTarget - total);
+  const spendDays = Math.max(0, unlockedDays - unlockedTarget);          // unlocked GMT above the buffer target
+  const cushion = total > 0 ? Math.max(0, 1 - (MAX_TIER*TIER_DAYS)/total) : 0;   // GMT price fall before max discount is lost
+  const reinvest = (phase === 'lock' || phase === 'buffer' || total < totalTarget) ? 'GMT'
+                 : (total > totalTarget ? 'TH or BTC' : 'GMT, TH or BTC');
+  return {phase, total, totalTarget, buyTrigger, sellTrigger, lockNeedDays, lockNowDays, bufferNeedDays,
+          acquireDays, spendDays, cushion, reinvest, belowSell: total < sellTrigger, aboveBuy: total > buyTrigger};
+}
+
+function ckItem(list, state, title, detail){
+  const li = document.createElement('li');
+  const dot = document.createElement('span'); dot.className = 'ck '+state;
+  const box = document.createElement('div');
+  const t = document.createElement('b'); t.textContent = title;
+  const d = document.createElement('div'); d.className = 'subtle'; d.textContent = detail;
+  box.appendChild(t); box.appendChild(d);
+  li.appendChild(dot); li.appendChild(box);
+  list.appendChild(li);
+}
+
+function renderTraditional(S){
+  const $ = id => document.getElementById(id);
+  const {gmtPrice, dm, lockedGMT, liquidGMT, totalGmt} = S;
+  const lockedDays = S.position.locked.days, unlockedDays = S.position.liquid.days;
+  const T = S.trad;
+  const plan = traditionalPlan({lockedDays, unlockedDays, lockedTarget:T.lockedTarget, unlockedTarget:T.unlockedTarget, buildKeep:T.buildKeep});
+  const gmt = days => days*dm;                                 // days -> GMT
+  const usdOf = days => days*dm*gmtPrice;
+  const dayTxt = d => fmt(d,0)+' days';
+  const gmtTxt = d => fmt(gmt(d),0)+' GMT';
+
+  // derived targets shown next to the inputs
+  $('tradTotalTarget').textContent = fmt(plan.totalTarget,0)+' days';
+  $('tradBuyTrigger').textContent = 'above '+fmt(plan.buyTrigger,0)+' days';
+  $('tradSellTrigger').textContent = 'below '+fmt(plan.sellTrigger,0)+' days';
+
+  // ---- headline: the answer ----
+  const title = $('tradHeadTitle'), sub = $('tradSub');
+  $('tradHeadVal').textContent = fmt(plan.total,0)+' / '+fmt(plan.totalTarget,0);
+  setHead('tradHeadline', 'tradHval', dm > 0 ? plan.total >= plan.totalTarget : null);
+  if(dm <= 0){
+    title.textContent = 'Enter your farm';
+    sub.textContent = 'Add your hashpower and efficiency above to size your Flywheel.';
+  }else if(plan.phase === 'lock'){
+    title.textContent = 'Building: lock your GMT';
+    const stillNeed = plan.lockNeedDays - plan.lockNowDays;
+    const bits = ['You have '+dayTxt(lockedDays)+' locked of '+fmt(T.lockedTarget,0)+'.'];
+    if(plan.lockNowDays > 0.5) bits.push('Lock '+gmtTxt(plan.lockNowDays)+' now for the maximum period, keeping about '+fmt(T.buildKeep,0)+' days unlocked.');
+    if(stillNeed > 0.5) bits.push('Acquire '+gmtTxt(stillNeed)+' (≈ '+usd(usdOf(stillNeed))+') more to reach '+fmt(T.lockedTarget,0)+' days locked.');
+    bits.push('Keep reinvesting in GMT.');
+    sub.textContent = bits.join(' ');
+  }else if(plan.phase === 'buffer'){
+    title.textContent = 'Building: fill the unlocked buffer';
+    sub.textContent = 'The locked side is done ('+dayTxt(lockedDays)+'). Build the unlocked buffer from '+dayTxt(unlockedDays)+' to '+fmt(T.unlockedTarget,0)+': add '
+      + gmtTxt(plan.bufferNeedDays)+' (≈ '+usd(usdOf(plan.bufferNeedDays))+'). Keep reinvesting in GMT.';
+  }else if(plan.phase === 'above'){
+    title.textContent = 'Above the trading trigger';
+    sub.textContent = 'You are above '+fmt(plan.buyTrigger,0)+' days. Optional: use up to '+gmtTxt(plan.spendDays)+' of your unlocked GMT to buy miners on the secondary market (back to '+fmt(T.unlockedTarget,0)+' days unlocked), then reinvest in GMT until you are back at '+fmt(plan.totalTarget,0)+'. Otherwise reinvest in TH or take BTC.';
+  }else{
+    title.textContent = 'Flywheel built';
+    sub.textContent = 'You are at '+dayTxt(plan.total)+' (target '+fmt(plan.totalTarget,0)+'). '+(plan.total > plan.totalTarget ? 'Above the target, so reinvest in TH or take profits in BTC.' : 'At the target: keep reinvesting in GMT to hold it.');
+  }
+  if(dm > 0 && (plan.phase === 'built' || plan.phase === 'above') && unlockedDays < T.unlockedTarget){
+    sub.textContent += ' Note: your unlocked buffer ('+dayTxt(unlockedDays)+') is below the '+fmt(T.unlockedTarget,0)+'-day target.';
+  }
+
+  // ---- stat cards ----
+  $('tradLockedStat').textContent = fmt(lockedDays,0)+' / '+fmt(T.lockedTarget,0);
+  $('tradLockedSub').innerHTML = lockedDays >= T.lockedTarget ? '<span class="tag met">target met</span>' : '<span class="tag short">'+fmt(plan.lockNeedDays,0)+' days short</span>';
+  $('tradUnlockedStat').textContent = fmt(unlockedDays,0)+' / '+fmt(T.unlockedTarget,0);
+  $('tradUnlockedSub').innerHTML = unlockedDays >= T.unlockedTarget ? '<span class="tag met">target met</span>' : '<span class="tag short">'+fmt(T.unlockedTarget-unlockedDays,0)+' days short</span>';
+  $('tradAcquire').textContent = plan.acquireDays > 0.5 ? fmt(gmt(plan.acquireDays),0)+' GMT' : '0';
+  $('tradAcquireSub').textContent = plan.acquireDays > 0.5 ? '≈ '+usd(usdOf(plan.acquireDays))+' at current price' : 'both targets covered';
+  $('tradCushion').textContent = plan.total > 0 ? fmt(plan.cushion*100,0)+'%' : '—';
+  $('tradCushionSub').textContent = plan.total <= 0 ? '' : (plan.cushion > 0 ? 'GMT price fall before you lose the max discount' : 'already below the max-discount line');
+
+  setState($('tradLockedStat'), dm > 0 ? lockedDays >= T.lockedTarget : null);
+  setState($('tradUnlockedStat'), dm > 0 ? unlockedDays >= T.unlockedTarget : null);
+  setState($('tradAcquire'), dm > 0 ? plan.acquireDays <= 0.5 : null);
+  setState($('tradCushion'), dm > 0 && plan.total > 0 ? plan.cushion > 0 : null);
+
+  // ---- progress bar: total days vs target ----
+  const bar = $('tradGapBar');
+  bar.style.width = (plan.totalTarget > 0 ? Math.min(100, plan.total/plan.totalTarget*100) : 100)+'%';
+  bar.classList.toggle('over', plan.total >= plan.totalTarget);
+  $('tradGapLabel').textContent = plan.total >= plan.totalTarget
+    ? fmt(plan.total,0)+' / '+fmt(plan.totalTarget,0)+' days (target met)'
+    : fmt(plan.total,0)+' / '+fmt(plan.totalTarget,0)+' days ('+fmt(plan.totalTarget-plan.total,0)+' short)';
+
+  // ---- build table: targets vs what you hold ----
+  fillBuildRows('tradBuildRows', T.lockedTarget, T.unlockedTarget, S);
+  const acquireUsd = usdOf(plan.acquireDays);
+  $('tradFeeNote').textContent = plan.acquireDays > 0.5
+    ? 'If you build it by reinvesting BTC earnings into GMT, GoMining charges a 2.25% reinvest fee: about '+usd(acquireUsd/(1-0.0225))+' of earnings for '+usd(acquireUsd)+' of GMT.'
+    : '';
+
+  // ---- weekly checklist ----
+  const list = $('tradChecklist'); list.replaceChildren();
+  ckItem(list, 'info', 'Re-max your lock', 'Extend it back to the maximum (208 weeks) once a week, on your Tuesday check-in. Your votes decay every week otherwise.');
+  ckItem(list, 'info', 'Check your days', dayTxt(plan.total)+' in total: '+dayTxt(lockedDays)+' locked + '+dayTxt(unlockedDays)+' unlocked (target '+fmt(plan.totalTarget,0)+').');
+  ckItem(list, lockedDays >= T.lockedTarget ? 'ok' : 'todo', 'Top up the lock to '+fmt(T.lockedTarget,0)+' days',
+    lockedDays >= T.lockedTarget ? 'Locked side is at '+dayTxt(lockedDays)+'. Nothing to add.' : 'Lock '+gmtTxt(plan.lockNowDays)+' from your unlocked GMT now'+(plan.lockNeedDays > plan.lockNowDays+0.5 ? '; you still need '+gmtTxt(plan.lockNeedDays-plan.lockNowDays)+' more.' : '.'));
+  ckItem(list, 'info', 'Set your reinvest strategy', (plan.phase === 'lock' || plan.phase === 'buffer') ? 'Still building: reinvest in GMT until both targets are met.' : (plan.total < plan.totalTarget ? 'Under '+fmt(plan.totalTarget,0)+' days: reinvest in GMT.' : (plan.total > plan.totalTarget ? 'Over '+fmt(plan.totalTarget,0)+' days: reinvest in TH or BTC.' : 'Exactly at target: GMT, TH or BTC.')));
+  ckItem(list, plan.aboveBuy || plan.belowSell ? 'todo' : 'ok', 'Optional: trading triggers',
+    plan.aboveBuy ? 'Above '+fmt(plan.buyTrigger,0)+' days: buy miners with up to '+gmtTxt(plan.spendDays)+' of unlocked GMT, then go back to GMT reinvestment.'
+      : (plan.belowSell ? 'Below '+fmt(plan.sellTrigger,0)+' days: sell any extra miners you bought earlier.' : 'Between '+fmt(plan.sellTrigger,0)+' and '+fmt(plan.buyTrigger,0)+' days: nothing to do.'));
+}
+
+// ---- Inputs -> shared numbers -> per-tab rendering --------------------------------------
+// readInputs(): everything the user typed. computeShared(): the numbers every tab needs
+// (farm cost, discounts, position, token tier). renderShared(): the panels above the tabs.
+// Each tab then has its own render function; calc() runs them all, so switching tabs never
+// shows stale numbers.
+function readInputs(){
+  const el = id => document.getElementById(id);
+  const periodSel = el('period');
+  const num = (id, dflt) => { const v = parseFloat(el(id).value); return isFinite(v) && v >= 0 ? v : dflt; };
+  return {
+    th: parseFloat(el('th').value)||0,
+    watt: parseFloat(el('watt').value)||0,
+    gmtPrice: parseFloat(el('gmtPrice').value)||0.0001,
+    kwh: parseFloat(el('kwh').value)||0,
+    svcConst: parseFloat(el('svcConst').value)||0,
+    d2: parseFloat(el('d2').value)/100,
+    d3: parseFloat(el('d3').value)/100,
+    d4: parseFloat(el('d4').value)/100,
+    target: parseFloat(el('target').value)/100,
+    periodSel,
+    f: parseFloat(periodSel.value)||1,
+    trad: {lockedTarget: num('tradLocked', 360), unlockedTarget: num('tradUnlocked', 140), buildKeep: num('tradKeep', 14)},
+    mod: {lockedTarget: num('modLocked', 400), unlockedTarget: num('modUnlocked', 100), minUnlocked: num('modMin', 50),
+          btcPrice: num('btcPrice', BTC_DEFAULT), btcCutoff: num('btcCutoff', 100000), thPrice: num('thPrice', 12.53),
+          marketDiscount: Math.min(0.95, num('mktDiscount', 20)/100), growth: num('greedyGrowth', 0.16)/100}
+  };
+}
+
+function computeShared(inp){
+  const {th, watt, gmtPrice, kwh, svcConst, d2, d3, d4} = inp;
   const nonToken = d2+d3+d4;
-
-  const target = parseFloat(document.getElementById('target').value)/100;
-  const periodSel = document.getElementById('period');
-  const f = parseFloat(periodSel.value)||1;
-  const pool = lockModel.weeklyPool;
-  const totalVotes = lockModel.totalVotes;
 
   // core daily figures
   const elec0 = (kwh*24*watt)/gmtPrice/1000;      // GMT/TH/day @0%
@@ -765,9 +1442,40 @@ function calc(){
   const tier = tierFor(totalGmt, dm);
   const d1 = tier/100;
   const totalDiscount = Math.min(1, d1+nonToken);
-
   const weeklyOpexGMT = 7*perDay0*(1-totalDiscount);
-  const weeklyOpexUSD = weeklyOpexGMT*gmtPrice;
+
+  return {...inp, nonToken, perDay0, dm, position, lockedGMT, liquidGMT, totalGmt, daysCovered,
+          tier, d1, totalDiscount, weeklyOpexGMT, weeklyOpexUSD: weeklyOpexGMT*gmtPrice};
+}
+
+function renderShared(S){
+  const set = (id, text) => { document.getElementById(id).textContent = text; };
+  set('thOut', fmt(S.th,2));
+  set('wattOut', fmt(S.watt,1));
+  set('gmtPriceOut', "$"+fmt(S.gmtPrice,4));
+  set('kwhOut', "$"+fmt(S.kwh,4));
+  set('svcConstOut', "$"+fmt(S.svcConst,4));
+  set('d1Out', fmt(S.d1*100,1)+"%");
+  set('d2Out', fmt(S.d2*100,1)+"%");
+  set('d3Out', fmt(S.d3*100,1)+"%");
+  set('d4Out', fmt(S.d4*100,2)+"%");
+  set('dTotalOut', fmt(S.totalDiscount*100,2)+"%");
+  set('lockedDaysOut', fmt(S.position.locked.days,0));
+  set('liquidDaysOut', fmt(S.position.liquid.days,0));
+  set('lockedGmtOut', fmt(S.lockedGMT,0));
+  set('liquidGmtOut', fmt(S.liquidGMT,0));
+  set('d1Info', S.tier >= MAX_TIER
+    ? fmt(S.daysCovered,0)+" days covered — maximum discount."
+    : fmt(S.daysCovered,0)+" days covered — "+fmt(Math.max(0,(S.tier+1)*TIER_DAYS-S.daysCovered),0)+" more days for the next 1%.");
+}
+
+// ---- Tab: OPEX 125% Flywheel ------------------------------------------------------------
+function renderOpex(S){
+  const {gmtPrice, target, periodSel, f, lockedGMT, liquidGMT, totalGmt, dm, perDay0, nonToken,
+         weeklyOpexGMT, weeklyOpexUSD, totalDiscount} = S;
+  const pool = lockModel.weeklyPool;
+  const totalVotes = lockModel.totalVotes;
+  const periodName = periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','');
 
   // lock model. tOthers = everyone else's votes (total minus your current lock's votes).
   const tOthers = Math.max(0, totalVotes - lockedGMT*f);
@@ -775,29 +1483,11 @@ function calc(){
   const aprNow = modelApr(lockedGMT, f, tOthers, pool);
   const baseApr = (365/7)*pool*f/(tOthers+f);
 
-  // display echoes
-  document.getElementById('thOut').textContent = fmt(th,2);
-  document.getElementById('wattOut').textContent = fmt(watt,1);
-  document.getElementById('gmtPriceOut').textContent = "$"+fmt(gmtPrice,4);
-  document.getElementById('kwhOut').textContent = "$"+fmt(kwh,4);
-  document.getElementById('svcConstOut').textContent = "$"+fmt(svcConst,4);
-  document.getElementById('d1Out').textContent = fmt(d1*100,1)+"%";
-  document.getElementById('d2Out').textContent = fmt(d2*100,1)+"%";
-  document.getElementById('d3Out').textContent = fmt(d3*100,1)+"%";
-  document.getElementById('d4Out').textContent = fmt(d4*100,2)+"%";
-  document.getElementById('dTotalOut').textContent = fmt(totalDiscount*100,2)+"%";
   document.getElementById('targetOut').textContent = fmt(target*100,0)+"%";
-  document.getElementById('periodOut').textContent = periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','');
-  document.getElementById('lockedDaysOut').textContent = fmt(position.locked.days,0);
-  document.getElementById('liquidDaysOut').textContent = fmt(position.liquid.days,0);
-  document.getElementById('lockedGmtOut').textContent = fmt(lockedGMT,0);
-  document.getElementById('liquidGmtOut').textContent = fmt(liquidGMT,0);
+  document.getElementById('periodOut').textContent = periodName;
   document.getElementById('votesOut').textContent = compact(totalVotes);
   document.getElementById('poolOut').textContent = compact(pool)+" GMT/wk";
   document.getElementById('baseAprOut').textContent = fmt(baseApr*100,2)+"%";
-  document.getElementById('d1Info').textContent = tier >= MAX_TIER
-    ? fmt(daysCovered,0)+" days covered — maximum discount."
-    : fmt(daysCovered,0)+" days covered — "+fmt(Math.max(0,(tier+1)*TIER_DAYS-daysCovered),0)+" more days for the next 1%.";
 
   // current position
   document.getElementById('weeklyOpexUsd').textContent = usd(weeklyOpexUSD);
@@ -813,6 +1503,7 @@ function calc(){
   }else{
     covStatusEl.innerHTML = '<span class="tag short">'+fmt(target*100-coveragePct,1)+'% short</span>';
   }
+  setState(document.getElementById('currentCoverage'), weeklyOpexGMT > 0 ? coveragePct >= target*100 : null);
 
   // required lock: two plans (keep your liquid GMT liquid, or lock it too)
   const base = {perDay0, nonToken, dm, target, pool, tOthers, f};
@@ -829,11 +1520,11 @@ function calc(){
     const tierAt = tierFor(Math.max(L, lockedGMT) + keep, dm);
     return "<tr>"
       + "<td "+td+">"+label+"</td>"
-      + "<td>"+fmt(L,0)+" GMT</td>"
+      + tdc(fmt(L,0)+" GMT", lockedGMT >= L)
       + "<td>"+tierAt+"%</td>"
       + "<td>"+fmt(modelApr(L, f, tOthers, pool)*100,2)+"%</td>"
       + "<td>"+(fromLiquid>0 ? fmt(fromLiquid,0)+" GMT" : "—")+"</td>"
-      + "<td>"+(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none")+"</td>"
+      + tdc(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none", buy <= 0.5)
       + "</tr>";
   }
   document.getElementById('planRows').innerHTML =
@@ -845,6 +1536,8 @@ function calc(){
   const barEl = document.getElementById('gapBar');
   if(!planAll){
     head.textContent = "—";
+    setHead("opexHeadline", "opexHval", false);
+    setState(document.getElementById("buyGmt"), false);
     sub.textContent = "Not reachable: at this coverage target your costs exceed the whole weekly reward pool.";
     document.getElementById('buyGmt').textContent = "—";
     document.getElementById('buyUsd').textContent = "";
@@ -856,9 +1549,11 @@ function calc(){
     const fromLiquid = Math.min(liquidGMT, gap);
     const buy = gap - fromLiquid;
     head.textContent = fmt(L,0);
+    setHead("opexHeadline", "opexHval", lockedGMT >= L);
+    setState(document.getElementById("buyGmt"), buy <= 0.5);
     sub.textContent = gap > 0
-      ? "Locking your liquid GMT too, at the "+periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','')+" lock period. You hold "+fmt(lockedGMT,0)+" locked + "+fmt(liquidGMT,0)+" liquid: lock "+fmt(gap,0)+" more ("+fmt(fromLiquid,0)+" from your liquid"+(buy>0 ? ", buy "+fmt(buy,0)+" more" : "")+")."
-      : "Your current lock already meets the target at the "+periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','')+" lock period.";
+      ? "Locking your liquid GMT too, at the "+periodName+" lock period. You hold "+fmt(lockedGMT,0)+" locked + "+fmt(liquidGMT,0)+" liquid: lock "+fmt(gap,0)+" more ("+fmt(fromLiquid,0)+" from your liquid"+(buy>0 ? ", buy "+fmt(buy,0)+" more" : "")+")."
+      : "Your current lock already meets the target at the "+periodName+" lock period.";
     document.getElementById('buyGmt').textContent = buy>0 ? fmt(buy,0)+" GMT" : "0";
     document.getElementById('buyUsd').textContent = buy>0 ? "≈ "+usd(buy*gmtPrice)+" at current price" : "nothing to buy";
     barEl.style.width = (L>0 ? Math.min(100, lockedGMT/L*100) : 100)+"%";
@@ -875,22 +1570,73 @@ function calc(){
     const fi = parseFloat(o.value);
     const tOth = Math.max(0, totalVotes - lockedGMT*fi);
     const res = solveLock({...base, f: fi, tOthers: tOth, keep: 0});
-    const label = o.text.replace(' (4 years)',' (4 years)');
+    const label = o.text;
     if(!res){
       prow += "<tr><td "+td+">"+label+"</td><td colspan=\"3\">Not reachable at this target.</td></tr>";
     }else{
       const buy = Math.max(0, res.L - totalGmt);
       prow += "<tr>"
         + "<td "+td+">"+label+"</td>"
-        + "<td>"+fmt(res.L,0)+" GMT</td>"
+        + tdc(fmt(res.L,0)+" GMT", totalGmt >= res.L)
         + "<td>"+fmt(modelApr(res.L, fi, tOth, pool)*100,2)+"%</td>"
-        + "<td>"+(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none")+"</td>"
+        + tdc(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none", buy <= 0.5)
         + "</tr>";
     }
   });
   document.getElementById('periodRows').innerHTML = prow;
 }
 
+function calc(){
+  syncModInputs();
+  const S = computeShared(readInputs());
+  renderShared(S);
+  renderOpex(S);
+  renderTraditional(S);
+  renderModified(S);
+}
+
+// ---- Tabs ----------------------------------------------------------------------------------
+// Which tab is open lives in the URL hash (#traditional, #modified, #opex), so a tab can be
+// linked to and the back button works. The Traditional Flywheel is the default.
+const TABS = ['traditional','modified','opex'];
+const DEFAULT_TAB = 'traditional';
+
+function selectTab(name, fromHash){
+  if(!TABS.includes(name)) name = DEFAULT_TAB;
+  TABS.forEach(t=>{
+    const on = t === name;
+    const tab = document.getElementById('tab-'+t);
+    tab.setAttribute('aria-selected', on ? 'true' : 'false');
+    tab.tabIndex = on ? 0 : -1;
+    document.getElementById('panel-'+t).hidden = !on;
+  });
+  if(!fromHash){
+    try{ history.replaceState(null, '', '#'+name); }catch(err){ /* file:// or sandboxed: the tab still switches */ }
+  }
+}
+
+function initTabs(){
+  TABS.forEach((t, i)=>{
+    const tab = document.getElementById('tab-'+t);
+    tab.addEventListener('click', ()=>selectTab(t));
+    tab.addEventListener('keydown', e=>{
+      const step = {ArrowRight:1, ArrowLeft:-1}[e.key];
+      let next = null;
+      if(step) next = TABS[(i+step+TABS.length) % TABS.length];
+      else if(e.key === 'Home') next = TABS[0];
+      else if(e.key === 'End') next = TABS[TABS.length-1];
+      if(next){
+        e.preventDefault();
+        selectTab(next);
+        document.getElementById('tab-'+next).focus();
+      }
+    });
+  });
+  window.addEventListener('hashchange', ()=>selectTab(location.hash.slice(1), true));
+  selectTab(location.hash.slice(1), true);
+}
+
+initTabs();
 calc();
 fetchLiveGmtPrice();
 loadMiningMode();
