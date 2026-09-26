@@ -6,7 +6,7 @@ A single-page, no-build calculator for [GoMining](https://gomining.com) miners r
 
 ## What it does
 
-Every input is editable — total hashpower, efficiency (W/TH), GMT price, power rate, and all four independent maintenance-discount components (token, service streak, VIP tier, mining mode) — and results update live:
+Almost every input is editable — total hashpower, efficiency (W/TH), GMT price, power rate, and three of the four independent maintenance-discount components (token discount slider, service-streak dropdown, VIP-tier dropdown) — and results update live. The fourth, **Mining Mode**, is set by GoMining's weekly veGOMINING vote for everyone in Mining mode, so it isn't editable: the page reads it from `mining-mode.json` (see below).
 
 - Weekly OPEX in USD and GMT
 - Estimated locked/liquid GMT from your "days covered" figures
@@ -48,10 +48,23 @@ Lock dividend APR is the single biggest unknown in the whole calculation, and ev
 
 **Bottom line: treat every "required GMT" and "breakeven APR" result as conditional on the APR you select.** This tool is for modeling scenarios, not predicting returns.
 
+## The Mining Mode discount (`mining-mode.json`)
+
+GoMining sets the extra Mining-mode maintenance discount each week from the veGOMINING vote and Burn & Mint cycle, so no fixed number is right for long. This repo keeps the latest value in `mining-mode.json`:
+
+```json
+{ "value": 1.35, "changed_at": "…", "checked_at": "…" }
+```
+
+- The calculator loads it on every page view. `value` is a percent.
+- `checked_at` is when the value was last verified against the app. If that's **more than 7 days old** (measured with the web server's clock, not the visitor's), the page shows an amber warning instead of "verified", because it usually means the automatic update has stopped.
+- If the file is missing or malformed, the page falls back to a built-in default and shows the same amber warning. It never silently treats a bad value as 0%.
+- Confirm the number against the Maintenance Discount page in the GoMining app before relying on any result.
+
 ## Not financial advice
 
 This is a calculator, not a recommendation. GoMining is an offshore, unlicensed platform; locked GMT is illiquid for up to 4 years; and every number here is a snapshot that will move. Verify current figures in-app before acting on anything this tool produces.
 
 ## Running it locally
 
-It's a single static HTML file with no dependencies — open `index.html` in any browser, or serve the folder with anything that serves static files.
+It's a single static HTML file with no dependencies — open `index.html` in any browser, or serve the folder with anything that serves static files. (Opened straight from disk, browsers block the page from reading `mining-mode.json`, so it shows the built-in default Mining Mode value with the amber warning. Serve the folder, e.g. `python -m http.server`, to see the real value.)

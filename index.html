@@ -97,6 +97,18 @@ header p{
 }
 .field input[type=number]:focus{outline:none;border-color:var(--amber);}
 .field input[type=range]{width:100%;accent-color:var(--amber);}
+.field select{
+  width:100%;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:7px 9px;
+  border-radius:6px;
+  font-family:var(--mono);
+  font-size:13px;
+}
+.field select:focus{outline:none;border-color:var(--amber);}
+.field .warn{color:var(--amber);}
 
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .subtle{font-size:11px;color:var(--dim);margin-top:2px;}
@@ -275,26 +287,60 @@ footer{
         <div class="subtle">Days-covered based, caps at 20% / 360 days</div>
       </div>
       <div class="field">
-        <label>Service Streak <b id="d2Out">1.5%</b></label>
-        <input type="range" id="d2" min="0" max="3" step="0.1" value="1.5" oninput="calc()">
+        <label>Service Streak <b id="d2Out">0.3%</b></label>
+        <select id="d2" onchange="calc()">
+          <option value="0.3" selected>Day 1 — 0.3%</option>
+          <option value="0.6">Day 2 — 0.6%</option>
+          <option value="0.9">Day 3 — 0.9%</option>
+          <option value="1.2">Day 4 — 1.2%</option>
+          <option value="1.5">Day 5 — 1.5%</option>
+          <option value="1.8">Day 6 — 1.8%</option>
+          <option value="2.1">Day 7 — 2.1%</option>
+          <option value="2.4">Day 8 — 2.4%</option>
+          <option value="2.7">Day 9 — 2.7%</option>
+          <option value="3.0">Day 10 — 3.0%</option>
+        </select>
         <div class="subtle">+0.3%/day, resets on any missed day</div>
       </div>
     </div>
     <div class="row2">
       <div class="field">
         <label>VIP Tier <b id="d3Out">0.0%</b></label>
-        <input type="range" id="d3" min="0" max="6" step="0.1" value="0" oninput="calc()">
+        <select id="d3" onchange="calc()">
+          <option value="0.0" selected>0.0%</option>
+          <option value="0.3">0.3%</option>
+          <option value="0.6">0.6%</option>
+          <option value="0.9">0.9%</option>
+          <option value="1.2">1.2%</option>
+          <option value="1.5">1.5%</option>
+          <option value="1.8">1.8% (Gold II)</option>
+          <option value="2.1">2.1% (Platinum I)</option>
+          <option value="2.4">2.4%</option>
+          <option value="2.7">2.7%</option>
+          <option value="3.0">3.0%</option>
+          <option value="3.3">3.3%</option>
+          <option value="3.6">3.6%</option>
+          <option value="3.9">3.9%</option>
+          <option value="4.2">4.2%</option>
+          <option value="4.5">4.5%</option>
+          <option value="4.8">4.8%</option>
+          <option value="5.1">5.1%</option>
+          <option value="5.4">5.4%</option>
+          <option value="5.7">5.7%</option>
+          <option value="6.0">6.0%</option>
+        </select>
         <div class="subtle">Gold II = 1.8% · Platinum I = 2.1%</div>
       </div>
       <div class="field">
-        <label>Mining Mode <b id="d4Out">1.00%</b></label>
-        <input type="range" id="d4" min="0" max="3" step="0.05" value="1.00" oninput="calc()">
-        <div class="subtle">Weekly governance-vote dependent</div>
+        <label>Mining Mode (Solo) <b id="d4Out">1.35%</b></label>
+        <input type="hidden" id="d4" value="1.35">
+        <div class="subtle">Set by the weekly veGOMINING vote. Not editable: updated automatically each night.</div>
+        <div class="subtle" id="d4Status">Loading latest value…</div>
       </div>
     </div>
     <div class="discount-sum">
       <span>Total Discount Applied</span>
-      <b id="dTotalOut">22.50%</b>
+      <b id="dTotalOut">21.65%</b>
     </div>
   </div>
 
@@ -490,6 +536,56 @@ function updateGmtPriceStatus(){
 
 setInterval(updateGmtPriceStatus, 30000);
 
+// ---- Mining Mode discount (auto-updated nightly into mining-mode.json) ----
+const MM_DEFAULT = 1.35;        // used only if mining-mode.json can't be loaded
+const MM_DEFAULT_AS_OF = '2026-09-26';
+const MM_STALE_DAYS = 7;        // warn when the last successful nightly check is older than this
+
+function setMiningModeStatus(text, isWarn){
+  const el = document.getElementById('d4Status');
+  if(!el) return;
+  el.textContent = text;          // textContent, never innerHTML: the text includes fetched data
+  el.classList.toggle('warn', !!isWarn);
+}
+
+async function loadMiningMode(){
+  try{
+    const res = await fetch('mining-mode.json?t='+Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    // Must be a real JSON number: Number(null), Number('') and Number(false) are all 0,
+    // which would silently zero the discount if the nightly job ever wrote a bad value.
+    const value = data.value;
+    if(typeof value !== 'number' || !isFinite(value) || value < 0 || value > 10) throw new Error('bad value');
+
+    document.getElementById('d4').value = value;
+    calc();
+
+    const checked = Date.parse(data.checked_at);
+    if(!isFinite(checked)){
+      setMiningModeStatus('⚠ No check date on record — confirm the value in the GoMining app.', true);
+      return;
+    }
+    // Age is measured against the web server's clock (the response's Date header),
+    // not the visitor's device clock, so a wrong device clock can't hide or fake a warning.
+    const serverNow = Date.parse(res.headers.get('Date'));
+    const ageDays = ((isFinite(serverNow) ? serverNow : Date.now()) - checked) / 86400000;
+    if(ageDays < -0.05){
+      setMiningModeStatus('⚠ The check date is in the future — confirm the value in the GoMining app.', true);
+    }else if(ageDays > MM_STALE_DAYS){
+      setMiningModeStatus('⚠ Not verified in '+Math.floor(ageDays)+' days — the nightly update may have stopped. Confirm in the GoMining app.', true);
+    }else if(ageDays < 1){
+      setMiningModeStatus('Verified within the last 24 hours.', false);
+    }else{
+      setMiningModeStatus('Verified '+Math.floor(ageDays)+' day'+(Math.floor(ageDays)===1?'':'s')+' ago.', false);
+    }
+  }catch(err){
+    document.getElementById('d4').value = MM_DEFAULT;
+    calc();
+    setMiningModeStatus('⚠ Couldn\'t load the latest value — showing '+MM_DEFAULT+'% (as of '+MM_DEFAULT_AS_OF+'). Confirm in the GoMining app.', true);
+  }
+}
+
 function calc(){
   const th = parseFloat(document.getElementById('th').value)||0;
   const watt = parseFloat(document.getElementById('watt').value)||0;
@@ -606,6 +702,7 @@ function calc(){
 
 calc();
 fetchLiveGmtPrice();
+loadMiningMode();
 </script>
 </body>
 </html>
