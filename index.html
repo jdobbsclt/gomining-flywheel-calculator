@@ -179,6 +179,9 @@ header p{
 }
 .gap-bar-fill.over{background:linear-gradient(90deg,var(--green),#3d9c6b);}
 
+.grid > *{min-width:0;}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px;}
+.table-wrap .compare-table{margin-top:0;min-width:520px;}
 .compare-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
 .compare-table th{
   text-align:left;color:var(--dim);font-weight:500;font-size:11px;
@@ -225,7 +228,7 @@ footer{
 
 <header>
   <h1>GMT Lock <span>Calculator</span></h1>
-  <p>How much GMT do you need locked to hit a 125% OPEX self-sufficiency target? Every field is editable — defaults show a fully-built Flywheel (360 locked / 140 liquid days). Swap in your own numbers from GoMining's Maintenance Discount page.</p>
+  <p>How much GMT do you need locked to hit a 125% OPEX self-sufficiency target? Enter your hashpower, efficiency and the GMT you hold locked and liquid: the calculator works out your token discount and GoMining's lock rewards, and tells you how much to lock. Defaults show a fully-built Flywheel (360 locked / 140 liquid days).</p>
 </header>
 
 <div class="grid">
@@ -269,8 +272,8 @@ footer{
     <div class="row2">
       <div class="field">
         <label>Token Discount <b id="d1Out">20.0%</b></label>
-        <input type="range" id="d1" min="0" max="20" step="0.1" value="20" oninput="calc()">
-        <div class="subtle">Days-covered based, caps at 20% / 360 days</div>
+        <div class="subtle">Automatic: +1% for every 18 days of maintenance your locked + liquid GMT covers, up to 20% at 360 days.</div>
+        <div class="subtle" id="d1Info">—</div>
       </div>
       <div class="field">
         <label>Service Streak <b id="d2Out">0.3%</b></label>
@@ -353,20 +356,45 @@ footer{
         <input type="number" id="liquidGmt" step="1" min="0" oninput="setBasis('liquid','gmt')">
       </div>
     </div>
-    <div class="subtle">"Days" = what GoMining's Maintenance Discount page shows, calculated at 0% discount. Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
+    <div class="subtle">"Days" = days of maintenance your GMT covers, as on GoMining's Maintenance Discount page (counted after your VIP, service and mining-mode discounts, before the token discount). Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
   </div>
 
-  <!-- TARGET & ASSUMPTIONS -->
+  <!-- TARGET & LOCK -->
   <div class="panel">
-    <h2>Target &amp; Assumptions</h2>
+    <h2>Target &amp; Lock</h2>
     <div class="field">
       <label>OPEX Coverage Target <b id="targetOut">125%</b></label>
       <input type="range" id="target" min="50" max="200" step="5" value="125" oninput="calc()">
     </div>
     <div class="field">
-      <label>Assumed Lock Dividend APR <b id="aprOut">22.6%</b></label>
-      <input type="range" id="apr" min="1" max="95" step="0.1" value="22.6" oninput="calc()">
+      <label>Lock Period <b id="periodOut">Max</b></label>
+      <select id="period" onchange="calc()">
+        <option value="0.004791">1 week</option>
+        <option value="0.020534">1 month</option>
+        <option value="0.062286">3 months</option>
+        <option value="0.124572">6 months</option>
+        <option value="0.249829">1 year</option>
+        <option value="0.499658">2 years</option>
+        <option value="0.749487">3 years</option>
+        <option value="1.000000" selected>Max (4 years)</option>
+      </select>
+      <div class="subtle">Votes = GMT locked × time left ÷ 4 years. A lock's votes decay weekly unless you re-extend it, and this model assumes you keep it at this period.</div>
     </div>
+    <div class="row2">
+      <div class="field">
+        <label>All Lockers' Votes <b id="votesOut">—</b></label>
+      </div>
+      <div class="field">
+        <label>Weekly Reward Pool <b id="poolOut">—</b></label>
+      </div>
+    </div>
+    <div class="subtle">GoMining's veGOMINING pool and total votes: not editable, updated automatically each night.</div>
+    <div class="subtle" id="lockStatus">Loading latest values…</div>
+    <div class="discount-sum">
+      <span>Base APR (a small lock, this period)</span>
+      <b id="baseAprOut">—</b>
+    </div>
+    <div class="subtle">Your real APR is lower for a big lock: your own votes dilute the pool.</div>
   </div>
 
   <!-- RESULTS -->
@@ -375,20 +403,20 @@ footer{
 
     <div class="headline">
       <div class="htxt">
-        <h3>Breakeven APR</h3>
-        <p>The dividend yield at which your <b>current</b> locked GMT already hits your target coverage — with no more capital added.</p>
+        <h3>Required Locked GMT</h3>
+        <p id="reqLockedSub">—</p>
       </div>
-      <div class="hval"><span id="breakevenApr">—</span><span class="unit">%APR</span></div>
+      <div class="hval"><span id="reqLockedHead">—</span><span class="unit"> GMT</span></div>
     </div>
 
     <div class="stat-grid">
       <div class="stat">
-        <div class="lbl">Weekly OPEX</div>
+        <div class="lbl">Weekly OPEX (now)</div>
         <div class="val" id="weeklyOpexUsd">—</div>
         <div class="sub" id="weeklyOpexGmt">— GMT/wk</div>
       </div>
       <div class="stat">
-        <div class="lbl">Weekly Dividend @ Assumed APR</div>
+        <div class="lbl">Weekly Dividend (now)</div>
         <div class="val" id="weeklyDivUsd">—</div>
         <div class="sub" id="weeklyDivGmt">— GMT/wk</div>
       </div>
@@ -398,24 +426,29 @@ footer{
         <div class="sub" id="coverageStatus">—</div>
       </div>
       <div class="stat">
-        <div class="lbl">GMT Needed to Hit Target</div>
-        <div class="val" id="requiredGmt">—</div>
-        <div class="sub" id="requiredUsd">—</div>
+        <div class="lbl">GMT to Buy (lock all)</div>
+        <div class="val" id="buyGmt">—</div>
+        <div class="sub" id="buyUsd">—</div>
       </div>
     </div>
 
     <div class="gap-bar-wrap">
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:4px;">
-        <span>Locked GMT: current vs. required for target @ assumed APR</span>
+        <span>Locked GMT: now vs. required (locking all your liquid GMT)</span>
         <span id="gapLabel">—</span>
       </div>
       <div class="gap-bar"><div class="gap-bar-fill" id="gapBar" style="width:0%;"></div></div>
     </div>
 
-    <table class="compare-table">
-      <tr><th>Scenario</th><th>Assumed APR</th><th>Required Locked GMT</th><th>Gap vs. Current</th><th>Extra Capital Needed</th></tr>
-      <tbody id="scenarioRows"></tbody>
-    </table>
+    <div class="table-wrap"><table class="compare-table">
+      <tr><th>Plan</th><th>Required Locked GMT</th><th>Token Discount</th><th>Lock APR</th><th>From Your Liquid</th><th>GMT to Buy</th></tr>
+      <tbody id="planRows"></tbody>
+    </table></div>
+
+    <div class="table-wrap"><table class="compare-table">
+      <tr><th>Lock Period (lock all)</th><th>Required Locked GMT</th><th>Lock APR</th><th>GMT to Buy</th></tr>
+      <tbody id="periodRows"></tbody>
+    </table></div>
   </div>
 
   <details class="formula">
@@ -423,31 +456,35 @@ footer{
     <div class="formula-body">
       <h4>Daily maintenance per TH (at 0% discount)</h4>
       <code>elec_0 = (kWh_rate × 24 × W/TH) / GMT_price / 1000
-service_0 = service_constant / GMT_price</code>
+service_0 = service_constant / GMT_price
+perDay_0 = TH × (elec_0 + service_0)                  (GMT/day, whole farm)</code>
 
-      <h4>Actual daily maintenance (with your discount stack applied)</h4>
-      <code>daily_GMT = TH × (elec_0 + service_0) × (1 − total_discount)
-weekly_OPEX_GMT = daily_GMT × 7</code>
+      <h4>Token discount (automatic) and total discount</h4>
+      <code>maint_days = (locked_GMT + liquid_GMT) ÷ (perDay_0 × (1 − VIP − service − mining))
+token_discount = min(20%, floor(maint_days ÷ 18) × 1%)
+weekly_OPEX_GMT = 7 × perDay_0 × (1 − token − VIP − service − mining)</code>
+      <p style="margin:6px 0 0 0;">Both locked and liquid GMT count toward the token discount, which is why locking liquid GMT costs you nothing there. The "days" figure is measured after your non-token discounts (this matches GoMining's own Maintenance Discount page).</p>
 
-      <h4>Locked / liquid GMT from displayed "days" (and back)</h4>
-      <code>locked_GMT ≈ locked_days × TH × (elec_0 + service_0)
-liquid_GMT ≈ liquid_days × TH × (elec_0 + service_0)
-locked_days = locked_GMT ÷ (TH × (elec_0 + service_0))     (when you type GMT instead)</code>
-      <p style="margin:6px 0 0 0;">GoMining's "days" figure is always computed at the 0% discount rate — that's why this conversion doesn't use your discount stack, even though your actual weekly bill does. You can enter either days or GMT; the one you edited last is kept, and the other is derived from it.</p>
+      <h4>Lock rewards (GoMining veGOMINING model)</h4>
+      <code>votes v = GMT_locked × (time_left ÷ 4 years)
+weekly_reward = POOL × v ÷ (T_others + v)
+APR = (365 ÷ 7) × weekly_reward ÷ GMT_locked</code>
+      <p style="margin:6px 0 0 0;">Fitted to GoMining's own Lock Calculator: it reproduces its weekly reward within 0.01% for locks from 1 to 10,000,000 GMT and its APR at every lock period. POOL and total votes change every week and are refreshed automatically. T_others is total votes minus your current lock's votes.</p>
 
-      <h4>Coverage &amp; breakeven</h4>
-      <code>weekly_dividend_GMT = locked_GMT × APR ÷ 52
-coverage % = weekly_dividend_GMT ÷ weekly_OPEX_GMT × 100
-required_locked_GMT = (target% × weekly_OPEX_GMT × 52) ÷ APR
-breakeven_APR = (target% × weekly_OPEX_GMT × 52) ÷ current_locked_GMT</code>
-      <p style="margin:6px 0 0 0;">Dividends and OPEX are compared in GMT terms directly, so GMT price only matters for converting to USD for display — not for the coverage math itself.</p>
+      <h4>Required lock</h4>
+      <code>for each possible token-discount tier k = 0..20:
+  needed_dividend_k = target × 7 × perDay_0 × (1 − k% − VIP − service − mining)
+  v_k = needed_dividend_k × T_others ÷ (POOL − needed_dividend_k)
+  L_k = max(v_k ÷ time_fraction, 18k days of maintenance − GMT_kept_liquid)
+required_locked = the smallest L_k</code>
+      <p style="margin:6px 0 0 0;">Holding more GMT raises your token discount, which lowers your costs, which lowers the lock you need, so every tier is tried and the cheapest one that works is used. "Lock all" also puts your liquid GMT into the lock.</p>
     </div>
   </details>
 
 </div>
 
 <footer>
-  Not financial advice. Formulas reverse-engineered from real GoMining account screenshots and cross-checked against a real daily income history — verified to reproduce actual on-platform numbers to within ~0.3%. APR default (22.6%) is a live quote pulled from GoMining's own in-app Lock Calculator, not an outside estimate — but it's still a snapshot of one cycle, will move over time, and decays weekly if a lock isn't re-maxed. Treat every "required GMT" number here as conditional on the APR you select above. GMT/USD price is pulled live from CoinGecko on load and can be overridden manually. Inspired by the Flywheel Strategy write-up by u/DracoF on r/gomining.
+  Not financial advice. Maintenance formulas were reverse-engineered from real GoMining account screenshots and cross-checked against a real daily income history. The lock-rewards model is fitted to GoMining's own in-app Lock Calculator (within 0.01%), using its weekly reward pool and total votes, which move every week; the token-discount tiers come from GoMining's documentation. Rewards decay weekly unless a lock is re-extended, and this tool assumes it is. GMT/USD price is pulled live from CoinGecko on load and can be overridden manually. Inspired by the Flywheel Strategy write-up by u/DracoF on r/gomining.
 </footer>
 
 </div>
@@ -573,6 +610,108 @@ async function loadMiningMode(){
   }
 }
 
+// ---- Lock rewards model (GoMining veGOMINING), auto-updated nightly into lock-model.json ----
+//   votes v         = GMT locked x f,   f = time left / 4 years
+//   weekly reward   = POOL x v / (T_others + v)
+//   APR             = (365/7) x weekly reward / GMT locked
+// Fitted to GoMining's own Lock Calculator: weekly reward within 0.01% for 1 to 10,000,000 GMT,
+// and the APR at every lock period. POOL and total votes move every week, hence the nightly file.
+const LM_DEFAULT = {total_votes: 183317000, weekly_pool_gmt: 797632};  // used only if lock-model.json can't be loaded
+const LM_DEFAULT_AS_OF = '2026-09-26';
+const LM_STALE_DAYS = 7;   // warn when the last successful nightly check is older than this
+const lockModel = {totalVotes: LM_DEFAULT.total_votes, weeklyPool: LM_DEFAULT.weekly_pool_gmt};
+
+function inRange(n, min, max){ return typeof n === 'number' && isFinite(n) && n >= min && n <= max; }
+
+function setLockStatus(text, isWarn){
+  const el = document.getElementById('lockStatus');
+  if(!el) return;
+  el.textContent = text;          // textContent, never innerHTML: the text includes fetched data
+  el.classList.toggle('warn', !!isWarn);
+}
+
+async function loadLockModel(){
+  try{
+    const res = await fetch('lock-model.json?t='+Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    // Real numbers within sane ranges only: a null/string/0 must never silently replace the pool.
+    if(!inRange(data.total_votes, 1e6, 1e11) || !inRange(data.weekly_pool_gmt, 1e3, 1e8)) throw new Error('bad value');
+
+    lockModel.totalVotes = data.total_votes;
+    lockModel.weeklyPool = data.weekly_pool_gmt;
+    calc();
+
+    const checked = Date.parse(data.checked_at);
+    if(!isFinite(checked)){
+      setLockStatus('⚠ No check date on record — confirm against GoMining\'s Lock Calculator.', true);
+      return;
+    }
+    // Age is measured against the web server's clock (the Date header), not the visitor's device.
+    const serverNow = Date.parse(res.headers.get('Date'));
+    const ageDays = ((isFinite(serverNow) ? serverNow : Date.now()) - checked) / 86400000;
+    if(ageDays < -0.05){
+      setLockStatus('⚠ The check date is in the future — confirm against GoMining\'s Lock Calculator.', true);
+    }else if(ageDays > LM_STALE_DAYS){
+      setLockStatus('⚠ Not verified in '+Math.floor(ageDays)+' days — the nightly update may have stopped. Confirm against GoMining\'s Lock Calculator.', true);
+    }else if(ageDays < 1){
+      setLockStatus('Verified within the last 24 hours.', false);
+    }else{
+      setLockStatus('Verified '+Math.floor(ageDays)+' day'+(Math.floor(ageDays)===1?'':'s')+' ago.', false);
+    }
+  }catch(err){
+    lockModel.totalVotes = LM_DEFAULT.total_votes;
+    lockModel.weeklyPool = LM_DEFAULT.weekly_pool_gmt;
+    calc();
+    setLockStatus('⚠ Couldn\'t load the latest values — using the ones from '+LM_DEFAULT_AS_OF+'. Confirm against GoMining\'s Lock Calculator.', true);
+  }
+}
+
+// ---- Token discount: +1% per 18 days of maintenance covered, capped at 20% (360 days) ----
+// `dm` is the daily maintenance AFTER the non-token discounts (VIP + service + mining mode),
+// which is how GoMining counts "days covered". Locked and liquid GMT both count.
+const TIER_DAYS = 18, MAX_TIER = 20;
+function tierFor(totalGmt, dm){
+  if(!(dm > 0)) return 0;
+  return Math.min(MAX_TIER, Math.floor(totalGmt/dm/TIER_DAYS + 1e-9));
+}
+
+function modelWeekly(lockedGmt, f, tOthers, pool){
+  const v = lockedGmt*f;
+  return v > 0 ? pool*v/(tOthers+v) : 0;
+}
+function modelApr(lockedGmt, f, tOthers, pool){
+  return lockedGmt > 0 ? (365/7)*modelWeekly(lockedGmt, f, tOthers, pool)/lockedGmt : 0;
+}
+
+// Smallest locked GMT that reaches the coverage target. Holding more GMT raises the token
+// discount (lower costs, so a smaller lock is enough), so every tier k is tried: for tier k the
+// lock must (a) earn enough dividends at that tier's costs and (b) keep total GMT in the tier.
+//   o.keep = GMT that stays liquid (it still counts toward the token discount).
+function solveLock(o){
+  let best = null;
+  for(let k = 0; k <= MAX_TIER; k++){
+    const disc = Math.min(1, o.nonToken + k/100);
+    const need = o.target*7*o.perDay0*(1 - disc);           // weekly dividend needed, in GMT
+    let lDiv;
+    if(need <= 0) lDiv = 0;
+    else if(need >= o.pool) continue;                        // more than the whole pool: unreachable at this tier
+    else lDiv = (need*o.tOthers/(o.pool - need))/o.f;        // invert W = pool*v/(tOthers+v), v = L*f
+    const lTier = Math.max(0, TIER_DAYS*k*o.dm - o.keep);
+    const L = Math.max(lDiv, lTier);
+    if(best === null || L < best.L) best = {L, k};
+  }
+  return best;
+}
+
+function compact(n){
+  if(!isFinite(n)) return "—";
+  if(n >= 1e9) return fmt(n/1e9,2)+"B";
+  if(n >= 1e6) return fmt(n/1e6,1)+"M";
+  if(n >= 1e3) return fmt(n/1e3,1)+"K";
+  return fmt(n,0);
+}
+
 function calc(){
   const th = parseFloat(document.getElementById('th').value)||0;
   const watt = parseFloat(document.getElementById('watt').value)||0;
@@ -580,15 +719,61 @@ function calc(){
   const kwh = parseFloat(document.getElementById('kwh').value)||0;
   const svcConst = parseFloat(document.getElementById('svcConst').value)||0;
 
-  const d1 = parseFloat(document.getElementById('d1').value)/100;
   const d2 = parseFloat(document.getElementById('d2').value)/100;
   const d3 = parseFloat(document.getElementById('d3').value)/100;
   const d4 = parseFloat(document.getElementById('d4').value)/100;
-  const totalDiscount = d1+d2+d3+d4;
-
+  const nonToken = d2+d3+d4;
 
   const target = parseFloat(document.getElementById('target').value)/100;
-  const apr = parseFloat(document.getElementById('apr').value)/100;
+  const periodSel = document.getElementById('period');
+  const f = parseFloat(periodSel.value)||1;
+  const pool = lockModel.weeklyPool;
+  const totalVotes = lockModel.totalVotes;
+
+  // core daily figures
+  const elec0 = (kwh*24*watt)/gmtPrice/1000;      // GMT/TH/day @0%
+  const svc0 = svcConst/gmtPrice;                  // GMT/TH/day @0%
+  const perDay0 = (elec0+svc0)*th;                 // GMT/day @0%, whole farm
+  const dm = perDay0*(1-nonToken);                 // GMT/day after the non-token discounts
+
+  // locked / liquid position. "Days" convert to GMT at dm (GoMining counts days after the
+  // non-token discounts): GMT = days x dm and days = GMT / dm. Whichever field was edited last
+  // (positionBasis) is read; the other is derived and written back. The field being typed in
+  // is never overwritten, because it is always the basis.
+  const position = {};
+  ['locked','liquid'].forEach(which=>{
+    const daysEl = document.getElementById(which+'Days');
+    const gmtEl = document.getElementById(which+'Gmt');
+    let days, gmt;
+    if(positionBasis[which]==='gmt'){
+      gmt = parseFloat(gmtEl.value)||0;
+      days = dm>0 ? gmt/dm : 0;
+      daysEl.value = roundForInput(days,1);
+    }else{
+      days = parseFloat(daysEl.value)||0;
+      gmt = days*dm;
+      gmtEl.value = roundForInput(gmt,2);
+    }
+    position[which] = {days, gmt};
+  });
+  const lockedGMT = position.locked.gmt;
+  const liquidGMT = position.liquid.gmt;
+
+  // token discount is automatic, from total GMT held (locked + liquid)
+  const totalGmt = lockedGMT + liquidGMT;
+  const daysCovered = dm>0 ? totalGmt/dm : 0;
+  const tier = tierFor(totalGmt, dm);
+  const d1 = tier/100;
+  const totalDiscount = Math.min(1, d1+nonToken);
+
+  const weeklyOpexGMT = 7*perDay0*(1-totalDiscount);
+  const weeklyOpexUSD = weeklyOpexGMT*gmtPrice;
+
+  // lock model. tOthers = everyone else's votes (total minus your current lock's votes).
+  const tOthers = Math.max(0, totalVotes - lockedGMT*f);
+  const weeklyDivGMT = modelWeekly(lockedGMT, f, tOthers, pool);
+  const aprNow = modelApr(lockedGMT, f, tOthers, pool);
+  const baseApr = (365/7)*pool*f/(tOthers+f);
 
   // display echoes
   document.getElementById('thOut').textContent = fmt(th,2);
@@ -602,56 +787,23 @@ function calc(){
   document.getElementById('d4Out').textContent = fmt(d4*100,2)+"%";
   document.getElementById('dTotalOut').textContent = fmt(totalDiscount*100,2)+"%";
   document.getElementById('targetOut').textContent = fmt(target*100,0)+"%";
-  document.getElementById('aprOut').textContent = fmt(apr*100,1)+"%";
-
-  // core per-TH daily figures at 0% discount
-  const elec0 = (kwh*24*watt)/gmtPrice/1000;      // GMT/TH/day
-  const svc0 = svcConst/gmtPrice;                  // GMT/TH/day
-  const perTh0 = elec0+svc0;                        // GMT/TH/day @0%
-  const dailyTotal0GMT = perTh0*th;                  // GMT/day @0% whole farm
-  const dailyTotalGMT = dailyTotal0GMT*(1-totalDiscount); // GMT/day actual
-  const dailyTotalUSD = dailyTotalGMT*gmtPrice;
-
-  const weeklyOpexGMT = dailyTotalGMT*7;
-  const weeklyOpexUSD = dailyTotalUSD*7;
-
-  // locked / liquid position. "Days" convert to GMT at the 0% rate (per DracoF's
-  // definition), so GMT = days x dailyTotal0GMT and days = GMT / dailyTotal0GMT.
-  // Whichever field was edited last (positionBasis) is read; the other is derived
-  // and written back. The field being typed in is never overwritten, because it
-  // is always the basis.
-  const position = {};
-  ['locked','liquid'].forEach(which=>{
-    const daysEl = document.getElementById(which+'Days');
-    const gmtEl = document.getElementById(which+'Gmt');
-    let days, gmt;
-    if(positionBasis[which]==='gmt'){
-      gmt = parseFloat(gmtEl.value)||0;
-      days = dailyTotal0GMT>0 ? gmt/dailyTotal0GMT : 0;
-      daysEl.value = roundForInput(days,1);
-    }else{
-      days = parseFloat(daysEl.value)||0;
-      gmt = days*dailyTotal0GMT;
-      gmtEl.value = roundForInput(gmt,2);
-    }
-    position[which] = {days, gmt};
-  });
-  const lockedGMT = position.locked.gmt;
-  const liquidGMT = position.liquid.gmt;
-
+  document.getElementById('periodOut').textContent = periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','');
   document.getElementById('lockedDaysOut').textContent = fmt(position.locked.days,0);
   document.getElementById('liquidDaysOut').textContent = fmt(position.liquid.days,0);
   document.getElementById('lockedGmtOut').textContent = fmt(lockedGMT,0);
   document.getElementById('liquidGmtOut').textContent = fmt(liquidGMT,0);
+  document.getElementById('votesOut').textContent = compact(totalVotes);
+  document.getElementById('poolOut').textContent = compact(pool)+" GMT/wk";
+  document.getElementById('baseAprOut').textContent = fmt(baseApr*100,2)+"%";
+  document.getElementById('d1Info').textContent = tier >= MAX_TIER
+    ? fmt(daysCovered,0)+" days covered — maximum discount."
+    : fmt(daysCovered,0)+" days covered — "+fmt(Math.max(0,(tier+1)*TIER_DAYS-daysCovered),0)+" more days for the next 1%.";
 
+  // current position
   document.getElementById('weeklyOpexUsd').textContent = usd(weeklyOpexUSD);
-  document.getElementById('weeklyOpexGmt').textContent = fmt(weeklyOpexGMT,2)+" GMT/wk";
-
-  // dividend at assumed APR
-  const weeklyDivGMT = lockedGMT*apr/52;
-  const weeklyDivUSD = weeklyDivGMT*gmtPrice;
-  document.getElementById('weeklyDivUsd').textContent = usd(weeklyDivUSD);
-  document.getElementById('weeklyDivGmt').textContent = fmt(weeklyDivGMT,2)+" GMT/wk";
+  document.getElementById('weeklyOpexGmt').textContent = fmt(weeklyOpexGMT,2)+" GMT/wk · "+fmt(totalDiscount*100,1)+"% off";
+  document.getElementById('weeklyDivUsd').textContent = usd(weeklyDivGMT*gmtPrice);
+  document.getElementById('weeklyDivGmt').textContent = fmt(weeklyDivGMT,2)+" GMT/wk · "+(lockedGMT>0 ? fmt(aprNow*100,2)+"% APR" : "nothing locked");
 
   const coveragePct = weeklyOpexGMT>0 ? (weeklyDivGMT/weeklyOpexGMT*100) : 0;
   document.getElementById('currentCoverage').textContent = fmt(coveragePct,1)+"%";
@@ -662,49 +814,87 @@ function calc(){
     covStatusEl.innerHTML = '<span class="tag short">'+fmt(target*100-coveragePct,1)+'% short</span>';
   }
 
-  // required locked GMT for target at assumed APR
-  const requiredGMT = apr>0 ? (target*weeklyOpexGMT*52)/apr : Infinity;
-  const requiredUSD = requiredGMT*gmtPrice;
-  document.getElementById('requiredGmt').textContent = isFinite(requiredGMT)? fmt(requiredGMT,0)+" GMT" : "—";
-  document.getElementById('requiredUsd').textContent = isFinite(requiredUSD)? "≈ "+usd(requiredUSD)+" at current price" : "";
+  // required lock: two plans (keep your liquid GMT liquid, or lock it too)
+  const base = {perDay0, nonToken, dm, target, pool, tOthers, f};
+  const planKeep = solveLock({...base, keep: liquidGMT});
+  const planAll = solveLock({...base, keep: 0});
 
-  // breakeven APR: APR at which CURRENT locked GMT hits target
-  const breakevenApr = lockedGMT>0 ? (target*weeklyOpexGMT*52)/lockedGMT*100 : Infinity;
-  document.getElementById('breakevenApr').textContent = isFinite(breakevenApr) ? fmt(breakevenApr,1) : "—";
-
-  // gap bar: current locked vs required
-  const gapPct = requiredGMT>0 ? Math.min(100,(lockedGMT/requiredGMT*100)) : 0;
-  const bar = document.getElementById('gapBar');
-  bar.style.width = gapPct+"%";
-  bar.classList.toggle('over', lockedGMT>=requiredGMT);
-  const gapGMT = requiredGMT-lockedGMT;
-  document.getElementById('gapLabel').textContent = gapGMT>0
-    ? fmt(lockedGMT,0)+" / "+fmt(requiredGMT,0)+" GMT ("+fmt(gapGMT,0)+" short)"
-    : fmt(lockedGMT,0)+" / "+fmt(requiredGMT,0)+" GMT (target met)";
-
-  // scenario table (a single reference point: GoMining's own live quote)
-  const scenarios = [
-    {label:"Live quote — ~2K GOMINING lock", apr:0.226, tag:"reliable"}
-  ];
-  let rows = "";
-  scenarios.forEach(s=>{
-    const req = (target*weeklyOpexGMT*52)/s.apr;
-    const gap = req-lockedGMT;
-    const extraUsd = Math.max(0,gap)*gmtPrice;
-    rows += "<tr>"
-      + "<td style=\"font-family:var(--sans);\">"+s.label+" <span class=\"tag "+s.tag+"\">"+fmt(s.apr*100,1)+"%</span></td>"
-      + "<td>"+fmt(s.apr*100,1)+"%</td>"
-      + "<td>"+fmt(req,0)+" GMT</td>"
-      + "<td>"+(gap>0 ? fmt(gap,0)+" GMT short" : "met")+"</td>"
-      + "<td>"+(gap>0 ? usd(extraUsd) : "$0")+"</td>"
+  const td = 'style="font-family:var(--sans);"';
+  function planRow(label, res, keep, useLiquid){
+    if(!res) return "<tr><td "+td+">"+label+"</td><td colspan=\"5\">Not reachable: the target needs more than the whole weekly reward pool.</td></tr>";
+    const L = res.L;
+    const gap = Math.max(0, L - lockedGMT);
+    const fromLiquid = useLiquid ? Math.min(liquidGMT, gap) : 0;
+    const buy = gap - fromLiquid;
+    const tierAt = tierFor(Math.max(L, lockedGMT) + keep, dm);
+    return "<tr>"
+      + "<td "+td+">"+label+"</td>"
+      + "<td>"+fmt(L,0)+" GMT</td>"
+      + "<td>"+tierAt+"%</td>"
+      + "<td>"+fmt(modelApr(L, f, tOthers, pool)*100,2)+"%</td>"
+      + "<td>"+(fromLiquid>0 ? fmt(fromLiquid,0)+" GMT" : "—")+"</td>"
+      + "<td>"+(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none")+"</td>"
       + "</tr>";
+  }
+  document.getElementById('planRows').innerHTML =
+      planRow("Lock all your liquid GMT too", planAll, 0, true)
+    + planRow("Keep your liquid GMT liquid", planKeep, liquidGMT, false);
+
+  const head = document.getElementById('reqLockedHead');
+  const sub = document.getElementById('reqLockedSub');
+  const barEl = document.getElementById('gapBar');
+  if(!planAll){
+    head.textContent = "—";
+    sub.textContent = "Not reachable: at this coverage target your costs exceed the whole weekly reward pool.";
+    document.getElementById('buyGmt').textContent = "—";
+    document.getElementById('buyUsd').textContent = "";
+    document.getElementById('gapLabel').textContent = "—";
+    barEl.style.width = "0%";
+  }else{
+    const L = planAll.L;
+    const gap = Math.max(0, L - lockedGMT);
+    const fromLiquid = Math.min(liquidGMT, gap);
+    const buy = gap - fromLiquid;
+    head.textContent = fmt(L,0);
+    sub.textContent = gap > 0
+      ? "Locking your liquid GMT too, at the "+periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','')+" lock period. You hold "+fmt(lockedGMT,0)+" locked + "+fmt(liquidGMT,0)+" liquid: lock "+fmt(gap,0)+" more ("+fmt(fromLiquid,0)+" from your liquid"+(buy>0 ? ", buy "+fmt(buy,0)+" more" : "")+")."
+      : "Your current lock already meets the target at the "+periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','')+" lock period.";
+    document.getElementById('buyGmt').textContent = buy>0 ? fmt(buy,0)+" GMT" : "0";
+    document.getElementById('buyUsd').textContent = buy>0 ? "≈ "+usd(buy*gmtPrice)+" at current price" : "nothing to buy";
+    barEl.style.width = (L>0 ? Math.min(100, lockedGMT/L*100) : 100)+"%";
+    barEl.classList.toggle('over', lockedGMT>=L);
+    document.getElementById('gapLabel').textContent = gap>0
+      ? fmt(lockedGMT,0)+" / "+fmt(L,0)+" GMT ("+fmt(gap,0)+" short)"
+      : fmt(lockedGMT,0)+" / "+fmt(L,0)+" GMT (target met)";
+  }
+
+  // by lock period (locking all your liquid GMT)
+  const wanted = ['1 year','2 years','3 years','Max (4 years)'];
+  let prow = "";
+  [...periodSel.options].filter(o=>wanted.includes(o.text)).forEach(o=>{
+    const fi = parseFloat(o.value);
+    const tOth = Math.max(0, totalVotes - lockedGMT*fi);
+    const res = solveLock({...base, f: fi, tOthers: tOth, keep: 0});
+    const label = o.text.replace(' (4 years)',' (4 years)');
+    if(!res){
+      prow += "<tr><td "+td+">"+label+"</td><td colspan=\"3\">Not reachable at this target.</td></tr>";
+    }else{
+      const buy = Math.max(0, res.L - totalGmt);
+      prow += "<tr>"
+        + "<td "+td+">"+label+"</td>"
+        + "<td>"+fmt(res.L,0)+" GMT</td>"
+        + "<td>"+fmt(modelApr(res.L, fi, tOth, pool)*100,2)+"%</td>"
+        + "<td>"+(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none")+"</td>"
+        + "</tr>";
+    }
   });
-  document.getElementById('scenarioRows').innerHTML = rows;
+  document.getElementById('periodRows').innerHTML = prow;
 }
 
 calc();
 fetchLiveGmtPrice();
 loadMiningMode();
+loadLockModel();
 </script>
 </body>
 </html>

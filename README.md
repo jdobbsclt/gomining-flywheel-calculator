@@ -1,65 +1,76 @@
 # GoMining Flywheel — GMT Lock Calculator
 
-A single-page, no-build calculator for [GoMining](https://gomining.com) miners running the **Flywheel Strategy** (originally written up by u/DracoF on [r/gomining](https://www.reddit.com/r/gomining/)), extended to a "125% OPEX coverage" target: how much GMT do you need locked so the dividend yield alone covers your weekly electricity + service costs?
+A single-page, no-build calculator for [GoMining](https://gomining.com) miners running the **Flywheel Strategy** (originally written up by u/DracoF on [r/gomining](https://www.reddit.com/r/gomining/)), extended to a "125% OPEX coverage" target: how much GMT do you need locked so the lock dividends alone cover your weekly electricity + service costs?
 
 **[Live site →](https://jdobbsclt.github.io/gomining-flywheel-calculator/)**
 
 ## What it does
 
-Almost every input is editable — total hashpower, efficiency (W/TH), GMT price, power rate, and three of the four independent maintenance-discount components (token discount slider, service-streak dropdown, VIP-tier dropdown with all 21 tier names from Bronze I to Elite) — and results update live. The fourth, **Mining Mode**, is set by GoMining's weekly veGOMINING vote for everyone in Mining mode, so it isn't editable: the page reads it from `mining-mode.json` (see below).
+You enter your hashpower, efficiency, power/service costs, your VIP tier and service streak, and the GMT you hold **locked** and **liquid** (as "days covered" from GoMining's Maintenance Discount page, or as GMT — whichever you edit last is kept and the other is derived). The calculator then works out:
 
-- Weekly OPEX in USD and GMT
-- Locked and liquid GMT — enter either your "days covered" figures (from GoMining's Maintenance Discount page) or your GMT amounts directly; whichever you edit last is kept and the other is derived from it
-- Weekly dividend at an assumed lock APR
-- **Required locked GMT** to hit a chosen OPEX-coverage target (default 125%)
-- **Breakeven APR** — the yield at which your current locked GMT already meets the target
-- A scenario row at GoMining's own live 22.6% quote (~2K GOMINING lock): required locked GMT, gap vs. your current lock, and extra capital needed
+- your **token discount** automatically (see below), and your total maintenance discount stack;
+- your weekly OPEX in USD and GMT;
+- the **lock APR** GoMining's veGOMINING model actually gives you, for the lock period you pick (1 week up to Max) — the APR is a *result*, not a setting, because it depends on how much you lock and for how long;
+- your current dividend and OPEX coverage;
+- the **required locked GMT** to hit your coverage target (default 125%), with two plans: lock all your liquid GMT too, or keep it liquid — and how much of the gap your liquid GMT covers and how much you would need to buy;
+- the same answer for a 1-, 2-, 3-year and Max lock.
 
-## Why the formulas are trustworthy (and where they came from)
+Two of the inputs are not editable because GoMining sets them weekly: the **Mining Mode discount** (`mining-mode.json`) and the **lock reward pool and total votes** (`lock-model.json`). Both are refreshed automatically each night (see below).
 
-The maintenance-cost formulas were reverse-engineered directly from a real GoMining account's miner-detail screenshot (electricity + service cost breakdown) and then cross-checked against ~7 weeks of that account's actual daily income history — the model reproduces real on-platform daily costs to within **~0.3%**.
+## Where the numbers come from
+
+**Maintenance costs.** Reverse-engineered from a real GoMining account's miner-detail screenshot (electricity + service cost breakdown) and cross-checked against ~7 weeks of that account's actual daily income history — accurate to within **~0.3%**:
 
 ```
-elec_0  = (kWh_rate × 24 × W/TH) / GMT_price / 1000        (GMT/TH/day, 0% discount)
-service_0 = service_constant / GMT_price                     (GMT/TH/day, 0% discount)
-
-daily_GMT = TH × (elec_0 + service_0) × (1 − total_discount)
-weekly_OPEX_GMT = daily_GMT × 7
-
-locked_GMT ≈ locked_days × TH × (elec_0 + service_0)
-liquid_GMT ≈ liquid_days × TH × (elec_0 + service_0)
-
-weekly_dividend_GMT = locked_GMT × APR ÷ 52
-required_locked_GMT = (target% × weekly_OPEX_GMT × 52) ÷ APR
-breakeven_APR        = (target% × weekly_OPEX_GMT × 52) ÷ current_locked_GMT
+elec_0    = (kWh_rate × 24 × W/TH) / GMT_price / 1000        (GMT/TH/day, 0% discount)
+service_0 = service_constant / GMT_price
+perDay_0  = TH × (elec_0 + service_0)                        (GMT/day, whole farm)
+weekly_OPEX_GMT = 7 × perDay_0 × (1 − total_discount)
 ```
 
-GoMining's own "days covered" figure (shown on the Maintenance Discount page) is always calculated at the **0% discount rate** — that's why the locked/liquid GMT conversion above doesn't apply your discount stack, even though your real weekly bill does.
+**Discounts add together**: token + service streak + VIP + mining mode (checked against GoMining's Maintenance Discount page: 20 + 2.7 + 1.8 + 1.35 = 25.85%).
 
-## On the APR assumption — read this before trusting any output
+**Token discount** is +1% for every 18 days of maintenance your **locked + liquid** GMT covers (0% below 18 days, capped at 20% from 360 days) — GoMining's documented stepped table. GoMining counts those "days" **after** your non-token discounts (VIP, service, mining mode) and before the token discount:
 
-Lock dividend APR is the single biggest unknown in the whole calculation, and every source for it has real problems:
+```
+maint_days     = (locked_GMT + liquid_GMT) ÷ (perDay_0 × (1 − VIP − service − mining))
+token_discount = min(20%, floor(maint_days ÷ 18) × 1%)
+```
 
-- **GoMining's own dashboard** has shown APR in the ~77–92% range across recent mint cycles — self-reported, with no disclosed methodology.
-- **A widely-cited "12.6%" figure** traces to a single blog post reporting one person's lock — real numbers (13,594 GOMINING locked, 1,714 GOMINING earned), but the post never states a time period, so it may not even be an annualized rate.
-- **The most defensible number available**: GoMining's own in-app Lock Calculator, queried live against a real account, quoted **22.58% APR** for a ~2,000 GOMINING lock at max duration — matching the platform's own "Cycle 162: APR 22.68%" badge shown at the same time. That's a live, first-party, directly-observed figure, not a secondhand claim. It's the calculator's default.
-- Locking far more than that (tested up to the calculator's 10,000,000 GOMINING slider max) dilutes the quoted rate slightly — down to ~21.4% — but that effect is only meaningful at whale scale.
-- This rate is **not fixed**. It moves cycle to cycle, and it decays for any individual lock over time unless the lock is "re-maxed" (extended back to the full duration) — which is also why the original Flywheel strategy treats weekly re-maxing as a required step, not an optional one.
+(An earlier version of this calculator assumed the days were counted at the 0%-discount rate; a real account's numbers show GoMining's own figure matches the after-non-token-discounts version — 477 days displayed vs 477.9 computed, where the 0% version would give 450.) Because locked and liquid GMT both count, locking your liquid GMT costs you nothing in token discount.
 
-**Bottom line: treat every "required GMT" and "breakeven APR" result as conditional on the APR you select.** This tool is for modeling scenarios, not predicting returns.
+**Lock rewards.** GoMining's veGOMINING lock works like this, and this calculator reproduces GoMining's own in-app Lock Calculator with it (weekly reward within **0.01%** for locks of 1 to 10,000,000 GMT, and the APR at every lock period):
 
-## The Mining Mode discount (`mining-mode.json`)
+```
+votes v       = GMT_locked × (time_left ÷ 4 years)
+weekly_reward = POOL × v ÷ (T_others + v)          POOL = weekly reward pool, T_others = everyone else's votes
+APR           = (365 ÷ 7) × weekly_reward ÷ GMT_locked
+```
 
-GoMining sets the extra Mining-mode maintenance discount each week from the veGOMINING vote and Burn & Mint cycle, so no fixed number is right for long. This repo keeps the latest value in `mining-mode.json`:
+More GMT locked means more of the pool but also more dilution of your own share, so the APR falls as a lock grows (about 22.7% for a small max lock, ~22.1% at 5M GMT, ~21.5% at 10M). A lock's votes also **decay weekly** unless you re-extend it — this tool assumes you keep it at the period you choose.
+
+**Required lock.** Holding more GMT raises your token discount, which lowers your costs, which lowers the lock you need. So the calculator tries every token-discount tier (0–20%) and reports the smallest lock that works. This was checked against an independent brute-force search over thousands of random scenarios (identical to within 0.000003%).
+
+## The automatically-updated files
+
+Both files are kept current by a nightly job in [`gomining-servicetap`](https://github.com/jdobbsclt/gomining-servicetap), which already loads GoMining's dashboard every night.
+
+**`mining-mode.json`** — the extra Mining-mode discount, set each week by the veGOMINING vote:
 
 ```json
 { "value": 1.35, "changed_at": "…", "checked_at": "…" }
 ```
 
-- The calculator loads it on every page view. `value` is a percent.
-- `checked_at` is when the value was last verified against the app. If that's **more than 7 days old** (measured with the web server's clock, not the visitor's), the page shows an amber warning instead of "verified", because it usually means the automatic update has stopped.
-- If the file is missing or malformed, the page falls back to a built-in default and shows the same amber warning. It never silently treats a bad value as 0%.
-- Confirm the number against the Maintenance Discount page in the GoMining app before relying on any result.
+**`lock-model.json`** — the weekly reward pool and total votes that drive the lock model:
+
+```json
+{ "total_votes": 183317000, "weekly_pool_gmt": 797632, "changed_at": "…", "checked_at": "…" }
+```
+
+- The page loads both on every view.
+- `checked_at` is when the values were last verified. If that's **more than 7 days old** (measured with the web server's clock, not the visitor's), the page shows an amber warning instead of "verified", because it usually means the automatic update has stopped.
+- If a file is missing or malformed, the page falls back to built-in defaults and shows the same amber warning. Values must be real numbers within sane ranges, so a null, string or zero can never silently replace them.
+- The pool and total votes move every week. Confirm against GoMining's own Lock Calculator (app.gomining.com → Governance → My lock → Calculate) before relying on any result.
 
 ## Not financial advice
 
@@ -67,4 +78,4 @@ This is a calculator, not a recommendation. GoMining is an offshore, unlicensed 
 
 ## Running it locally
 
-It's a single static HTML file with no dependencies — open `index.html` in any browser, or serve the folder with anything that serves static files. (Opened straight from disk, browsers block the page from reading `mining-mode.json`, so it shows the built-in default Mining Mode value with the amber warning. Serve the folder, e.g. `python -m http.server`, to see the real value.)
+It's a single static HTML file with no dependencies — open `index.html` in any browser, or serve the folder with anything that serves static files. (Opened straight from disk, browsers block the page from reading the two JSON files, so it shows built-in default values with the amber warning. Serve the folder, e.g. `python -m http.server`, to see the real values.)
