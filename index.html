@@ -192,7 +192,6 @@ header p{
   font-family:var(--sans);font-weight:600;
 }
 .tag.reliable{background:rgba(79,174,124,0.15);color:var(--green);}
-.tag.unverified{background:rgba(209,79,67,0.15);color:var(--red);}
 .tag.met{background:rgba(79,174,124,0.15);color:var(--green);}
 .tag.short{background:rgba(226,149,47,0.15);color:var(--amber);}
 
@@ -683,12 +682,9 @@ function calc(){
     ? fmt(lockedGMT,0)+" / "+fmt(requiredGMT,0)+" GMT ("+fmt(gapGMT,0)+" short)"
     : fmt(lockedGMT,0)+" / "+fmt(requiredGMT,0)+" GMT (target met)";
 
-  // scenario table across key APR reference points
+  // scenario table (a single reference point: GoMining's own live quote)
   const scenarios = [
-    {label:"1 blogger, no timeframe", apr:0.126, tag:"unverified"},
-    {label:"Live quote — whale-size lock", apr:0.214, tag:"reliable"},
-    {label:"Live quote — ~2K GOMINING lock", apr:0.226, tag:"reliable"},
-    {label:"Platform dashboard headline", apr:0.92, tag:"unverified"}
+    {label:"Live quote — ~2K GOMINING lock", apr:0.226, tag:"reliable"}
   ];
   let rows = "";
   scenarios.forEach(s=>{

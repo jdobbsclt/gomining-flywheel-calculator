@@ -13,7 +13,7 @@ Almost every input is editable — total hashpower, efficiency (W/TH), GMT price
 - Weekly dividend at an assumed lock APR
 - **Required locked GMT** to hit a chosen OPEX-coverage target (default 125%)
 - **Breakeven APR** — the yield at which your current locked GMT already meets the target
-- A scenario table comparing required GMT across several APR reference points
+- A scenario row at GoMining's own live 22.6% quote (~2K GOMINING lock): required locked GMT, gap vs. your current lock, and extra capital needed
 
 ## Why the formulas are trustworthy (and where they came from)
 
