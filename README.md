@@ -12,6 +12,10 @@ The page opens on **Traditional**. The open tab is kept in the URL (`#traditiona
 
 **[Live site →](https://jdobbsclt.github.io/gomining-flywheel-calculator/)**
 
+## Live prices
+
+The GMT and BTC prices load when the page opens. CoinGecko is tried first; some networks are refused by it, so GMT falls back to Gate.io then Bitget (GOMINING/USDT, treated as USD), and BTC to Coinbase then Kraken. The line under each price says which source it came from. If no live GMT price can be loaded, the calculator falls back to a $0.30 placeholder, and a highlighted warning appears, since every days/GMT figure depends on that price. Type GoMining's current price or click Retry.
+
 ## Saved setups and share links
 
 Everything you type is saved automatically in **your own browser** (nothing is sent anywhere), so your numbers are still there next visit. The bar above the tabs lets you keep several named setups (for example one per account), switch between them, delete one, or **Reset to defaults**.
@@ -86,7 +90,7 @@ Implements DracoF's rules: lock 360 days of GMT at the maximum period, keep 140 
 Implements Audacity's variation, in the same Results format (headline, four stat cards, progress bar, tables):
 
 - **Targets:** 400 locked / 100 unlocked days by default, with an unlocked floor (default 50) below which the buffer is too thin. All editable.
-- **Phase headline:** compares the BTC price with your **BTC cutoff** (default $100,000, your own assumption). Below it: *accumulation*, keep reinvesting into GMT and TH. At or above it: *profit-taking*. The BTC price loads live from CoinGecko and can be overridden.
+- **Phase headline:** compares the BTC price with your **BTC cutoff** (default $100,000, your own assumption). Below it: *accumulation*, keep reinvesting into GMT and TH. At or above it: *profit-taking*. The BTC price loads live and can be overridden.
 - **Buying TH:** compares reinvesting directly at GoMining's ask (with the VIP bonus: +5% from Silver I, +10% from Diamond I) with buying listed TH on the marketplace using GMT, at a discount below the ask and after GoMining's 2.25% reinvest fee:
 
   ```
