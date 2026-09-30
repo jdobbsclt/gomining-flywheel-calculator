@@ -287,6 +287,12 @@ footer{
 .sharedbanner{margin:0 0 14px 0;padding:10px 12px;border:1px solid var(--amber);border-radius:10px;background:var(--panel2);font-size:13px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
 .sharedbanner span{flex:1 1 260px;}
 .sharedbanner[hidden]{display:none;}
+.pricewarn{margin:0 0 14px 0;padding:10px 12px;border:1px solid var(--amber);border-radius:10px;background:var(--panel2);color:var(--amber);font-size:13px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.pricewarn[hidden]{display:none;}
+.pricewarn span{flex:1 1 260px;}
+.pricewarn button{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;}
+.pricewarn button:hover{border-color:var(--amber);}
+.field input.stale{border-color:var(--amber);}
 </style>
 </head>
 <body>
@@ -311,6 +317,10 @@ footer{
   <span>You are viewing a setup someone shared with you. It is not saved and does not touch your own saved setups.</span>
   <button type="button" id="sbSave">Save as my own</button>
   <button type="button" id="sbDiscard">Go back to mine</button>
+</div>
+<div class="pricewarn" id="priceWarn" hidden>
+  <span>&#9888; The live GMT price could not be loaded, so the calculator is using a placeholder of $0.30. Days, GMT and dollar figures will be off until you type GoMining's current GMT price into the GMT Price box or retry.</span>
+  <button type="button" onclick="fetchLiveGmtPrice()">Retry live price</button>
 </div>
 
 
@@ -858,6 +868,7 @@ let gmtPriceManual = false;
 
 function onGmtPriceInput(){
   gmtPriceManual = true;
+  updatePriceWarning();
   const statusEl = document.getElementById('gmtPriceStatus');
   if(statusEl){
     statusEl.innerHTML = 'Manual entry — <a href="#" onclick="fetchLiveGmtPrice();return false;">use live price</a>';
@@ -865,33 +876,108 @@ function onGmtPriceInput(){
   calc();
 }
 
-async function fetchLiveGmtPrice(){
-  const statusEl = document.getElementById('gmtPriceStatus');
-  if(statusEl) statusEl.textContent = 'Fetching live price…';
+// Each source gives back a number or throws. CoinGecko goes first, but it refuses some networks
+// outright, so the exchange tickers after it are the fallback (USDT is treated as USD).
+async function fetchJson(url){
+  const ctl = new AbortController();
+  const timer = setTimeout(()=>ctl.abort(), 8000);
   try{
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+GMT_COINGECKO_ID+',bitcoin&vs_currencies=usd&include_last_updated_at=true');
+    const res = await fetch(url, {signal: ctl.signal});
     if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    const entry = data[GMT_COINGECKO_ID];
-    if(!entry || typeof entry.usd !== 'number') throw new Error('no price in response');
-    const btcEntry = data.bitcoin;
-    if(btcEntry && inRange(btcEntry.usd, 1000, 1e7)){
-      liveBtcPrice = btcEntry.usd;
-      if(!btcManual){ document.getElementById('btcPrice').value = liveBtcPrice.toFixed(0); setBtcStatus('Live via CoinGecko.', false); }
-    }else if(!btcManual){
-      setBtcStatus('⚠ Live BTC price unavailable — using $'+fmt(BTC_DEFAULT,0)+' as of '+BTC_DEFAULT_AS_OF+'.', true);
+    return await res.json();
+  }finally{ clearTimeout(timer); }
+}
+const GMT_SOURCES = [
+  {name:'CoinGecko', get: async ()=>{
+    const d = await fetchJson('https://api.coingecko.com/api/v3/simple/price?ids='+GMT_COINGECKO_ID+',bitcoin&vs_currencies=usd&include_last_updated_at=true');
+    const e = d[GMT_COINGECKO_ID];
+    return {gmt: e && e.usd, at: e && e.last_updated_at ? e.last_updated_at*1000 : Date.now(), btc: d.bitcoin && d.bitcoin.usd};
+  }},
+  {name:'Gate.io', get: async ()=>{
+    const d = await fetchJson('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=GOMINING_USDT');
+    return {gmt: parseFloat(d[0].last), at: Date.now()};
+  }},
+  {name:'Bitget', get: async ()=>{
+    const d = await fetchJson('https://api.bitget.com/api/v2/spot/market/tickers?symbol=GOMININGUSDT');
+    return {gmt: parseFloat(d.data[0].lastPr), at: Date.now()};
+  }}
+];
+const BTC_SOURCES = [
+  {name:'Coinbase', get: async ()=> parseFloat((await fetchJson('https://api.coinbase.com/v2/prices/BTC-USD/spot')).data.amount)},
+  {name:'Kraken', get: async ()=>{
+    const d = await fetchJson('https://api.kraken.com/0/public/Ticker?pair=XBTUSD');
+    return parseFloat(d.result.XXBTZUSD.c[0]);
+  }}
+];
+let liveGmtSource = null;
+let gmtFetchFailed = false;
+let fetchingLive = false;
+
+// Loud warning while the GMT price is only the placeholder: shown once a fetch has failed and
+// nothing live was ever loaded, hidden as soon as a live price arrives or you type your own.
+function updatePriceWarning(){
+  const show = gmtFetchFailed && liveGmtPrice === null && !gmtPriceManual;
+  document.getElementById('priceWarn').hidden = !show;
+  document.getElementById('gmtPrice').classList.toggle('stale', show);
+}
+
+async function fetchLiveGmtPrice(){
+  if(fetchingLive) return;
+  fetchingLive = true;
+  const statusEl = document.getElementById('gmtPriceStatus');
+  if(statusEl){ statusEl.classList.remove('warn'); statusEl.textContent = 'Fetching live price…'; }
+  try{
+    let got = null;
+    for(const src of GMT_SOURCES){
+      try{
+        const r = await src.get();
+        if(inRange(r.gmt, 0.0001, 1000)){ got = Object.assign({source: src.name}, r); break; }
+      }catch(err){ /* this source is down or refused us: try the next one */ }
     }
-    liveGmtPrice = entry.usd;
-    liveGmtFetchedAt = entry.last_updated_at ? entry.last_updated_at*1000 : Date.now();
-    gmtPriceManual = false;
-    document.getElementById('gmtPrice').value = liveGmtPrice.toFixed(4);
-    calc();
-    updateGmtPriceStatus();
-  }catch(err){
-    if(!btcManual && liveBtcPrice === null) setBtcStatus('⚠ Live BTC price unavailable — using $'+fmt(BTC_DEFAULT,0)+' as of '+BTC_DEFAULT_AS_OF+'. Type your own.', true);
-    if(statusEl){
-      statusEl.innerHTML = 'Live price unavailable — enter manually. <a href="#" onclick="fetchLiveGmtPrice();return false;">Retry</a>';
+    if(got){
+      liveGmtPrice = got.gmt;
+      liveGmtFetchedAt = got.at;
+      liveGmtSource = got.source;
+      gmtPriceManual = false;
+      gmtFetchFailed = false;
+      document.getElementById('gmtPrice').value = liveGmtPrice.toFixed(4);
+      updatePriceWarning();
+      calc();
+      updateGmtPriceStatus();
+    }else{
+      gmtFetchFailed = true;
+      updatePriceWarning();
+      if(statusEl){
+        statusEl.classList.add('warn');
+        statusEl.innerHTML = (liveGmtPrice === null
+          ? '⚠ No live price: this is a placeholder. Type GoMining\'s current price.'
+          : 'Refresh failed: still showing the last live price.')
+          + ' <a href="#" onclick="fetchLiveGmtPrice();return false;">Retry</a>';
+      }
     }
+
+    // BTC: CoinGecko's answer if it gave one, otherwise Coinbase, then Kraken.
+    let btc = got && inRange(got.btc, 1000, 1e7) ? {v: got.btc, source: got.source} : null;
+    if(!btc){
+      for(const src of BTC_SOURCES){
+        try{
+          const v = await src.get();
+          if(inRange(v, 1000, 1e7)){ btc = {v, source: src.name}; break; }
+        }catch(err){ /* try the next one */ }
+      }
+    }
+    if(btc){
+      liveBtcPrice = btc.v;
+      if(!btcManual){
+        document.getElementById('btcPrice').value = liveBtcPrice.toFixed(0);
+        setBtcStatus('Live via '+btc.source+'.', false);
+        calc();
+      }
+    }else if(!btcManual && liveBtcPrice === null){
+      setBtcStatus('⚠ Live BTC price unavailable — using $'+fmt(BTC_DEFAULT,0)+' as of '+BTC_DEFAULT_AS_OF+'. Type your own.', true);
+    }
+  }finally{
+    fetchingLive = false;
   }
 }
 
@@ -904,7 +990,8 @@ function updateGmtPriceStatus(){
   if(secs<60) ago = secs+'s ago';
   else if(secs<3600) ago = Math.round(secs/60)+'m ago';
   else ago = Math.round(secs/3600)+'h ago';
-  statusEl.innerHTML = 'Live via CoinGecko (GOMINING) · updated '+ago+' — <a href="#" onclick="fetchLiveGmtPrice();return false;">↻ refresh</a>';
+  statusEl.classList.remove('warn');
+  statusEl.innerHTML = 'Live via '+liveGmtSource+' · updated '+ago+' — <a href="#" onclick="fetchLiveGmtPrice();return false;">↻ refresh</a>';
 }
 
 setInterval(updateGmtPriceStatus, 30000);
