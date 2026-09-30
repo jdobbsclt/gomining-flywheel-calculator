@@ -332,6 +332,7 @@ footer{
   <button class="tab" role="tab" id="tab-modified" aria-controls="panel-modified" aria-selected="false" tabindex="-1">Modified Flywheel<span class="by">by Audacity</span></button>
   <button class="tab" role="tab" id="tab-opex" aria-controls="panel-opex" aria-selected="false" tabindex="-1">OPEX 125% Flywheel<span class="by">lock enough to cover your costs</span></button>
 </div>
+<p class="strategy-link"><a id="strategyLink" href="#" target="_blank" rel="noopener"></a></p>
 
 <div class="grid" id="sharedGrid">
 
@@ -462,7 +463,6 @@ footer{
 </div>
 
 <section class="tab-panel" role="tabpanel" id="panel-traditional" aria-labelledby="tab-traditional">
-<p class="strategy-link"><a href="https://www.reddit.com/r/gomining/comments/1sbqys5/the_flywheel_strategy/" target="_blank" rel="noopener">Read the strategy: The Flywheel Strategy (by DracoF)</a></p>
 <div class="grid">
 
   <!-- TARGETS -->
@@ -563,7 +563,6 @@ price cushion = 1 − 360 ÷ total days      (how far GMT can fall before total 
 </div>
 </section>
 <section class="tab-panel" role="tabpanel" id="panel-modified" aria-labelledby="tab-modified" hidden>
-<p class="strategy-link"><a href="https://www.reddit.com/r/GoMiningDiscussion/comments/1uxjlnh/a_modified_flywheel/" target="_blank" rel="noopener">Read the strategy: A Modified Flywheel (by Audacity)</a></p>
 <div class="grid">
 
   <!-- TARGETS & MARKET -->
@@ -705,7 +704,6 @@ TH growth after n years = (1 + weekly growth)^(52 n) − 1</code>
 </div>
 </section>
 <section class="tab-panel" role="tabpanel" id="panel-opex" aria-labelledby="tab-opex" hidden>
-<p class="strategy-link"><a href="https://www.reddit.com/r/GoMiningDiscussion/comments/1wl1ycn/build_your_farm_first_before_building_your_army/" target="_blank" rel="noopener">Read the strategy: Build Your Farm First Before Building Your Army (by u/Aggravating_Zone8984)</a></p>
 <div class="grid">
 
   <!-- TARGET & LOCK -->
@@ -1732,6 +1730,11 @@ function calc(){
 // linked to and the back button works. The Traditional Flywheel is the default.
 const TABS = ['traditional','modified','opex'];
 const DEFAULT_TAB = 'traditional';
+const STRATEGY_LINKS = {
+  traditional: ['https://www.reddit.com/r/gomining/comments/1sbqys5/the_flywheel_strategy/', 'Read the strategy: The Flywheel Strategy (by DracoF)'],
+  modified: ['https://www.reddit.com/r/GoMiningDiscussion/comments/1uxjlnh/a_modified_flywheel/', 'Read the strategy: A Modified Flywheel (by Audacity)'],
+  opex: ['https://www.reddit.com/r/GoMiningDiscussion/comments/1wl1ycn/build_your_farm_first_before_building_your_army/', 'Read the strategy: Build Your Farm First Before Building Your Army (by u/Aggravating_Zone8984)']
+};
 
 function selectTab(name, fromHash){
   if(!TABS.includes(name)) name = DEFAULT_TAB;
@@ -1742,6 +1745,9 @@ function selectTab(name, fromHash){
     tab.tabIndex = on ? 0 : -1;
     document.getElementById('panel-'+t).hidden = !on;
   });
+  const link = document.getElementById('strategyLink');
+  link.href = STRATEGY_LINKS[name][0];
+  link.textContent = STRATEGY_LINKS[name][1];
   if(!fromHash){
     try{ history.replaceState(null, '', '#'+name); }catch(err){ /* file:// or sandboxed: the tab still switches */ }
   }
