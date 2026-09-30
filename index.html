@@ -241,6 +241,18 @@ footer{
 .key-inputs input[type=number],.field input.key,.field select.key{border-color:var(--violet-line);}
 .market-settings{border-top:1px solid var(--border);margin-top:14px;padding-top:12px;opacity:.8;}
 .market-settings:hover,.market-settings:focus-within{opacity:1;}
+.miners{margin-top:10px;}
+.miners summary{cursor:pointer;font-size:12px;color:var(--violet-text);}
+.miners-body{margin-top:8px;}
+.minerhead,.minerrow{display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:center;}
+.minerhead{font-size:12px;color:var(--dim);margin:8px 0 4px;}
+.minerrow{margin-bottom:6px;}
+.minerrow input{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-family:var(--mono);font-size:13px;}
+.minerrow input:focus{outline:none;border-color:var(--violet-line);}
+.minerbtn,.minerrow button{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;}
+.minerbtn:hover,.minerrow button:hover{border-color:var(--violet-line);}
+.minerbtn:disabled{opacity:.5;cursor:default;}
+#minerStatus{margin-top:8px;}
 .market-title{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);margin-bottom:8px;}
 .strategy-link{margin:0 0 12px;}
 .strategy-link a{display:inline-block;padding:7px 14px;font-size:13px;color:#fff;background:var(--violet-line);border:1px solid var(--violet-line);border-radius:8px;text-decoration:none;}
@@ -358,6 +370,16 @@ footer{
         <div class="subtle">12W = current floor tier · 15W = legacy</div>
       </div>
     </div>
+    <details class="miners" id="miners">
+      <summary>Miners at different efficiencies? Enter each miner</summary>
+      <div class="miners-body">
+        <div class="subtle">GoMining charges each miner at its own W/TH. List them here and the two boxes above are filled in for you: TH added up, efficiency averaged by TH. That gives the same daily cost as GoMining's per-miner total.</div>
+        <div class="minerhead"><span>TH</span><span>W/TH</span><span></span></div>
+        <div id="minerList"></div>
+        <button type="button" id="minerAdd" class="minerbtn">Add miner</button>
+        <div class="subtle" id="minerStatus" role="status"></div>
+      </div>
+    </details>
     <div class="market-settings">
     <div class="market-title">Market settings · rarely need changing</div>
     <div class="row2">
@@ -1786,6 +1808,86 @@ function initTabs(){
   selectTab(location.hash.slice(1), true);
 }
 
+// ---- Miners at different efficiencies ---------------------------------------------------------
+// Daily cost = TH x (W/TH x kWh rate + service fee), which is linear in W/TH, so the TH-weighted
+// average efficiency gives exactly the same cost as GoMining's per-miner total. This helper only
+// works out that total and average and writes them into Total Hashpower and Efficiency; the
+// calculation itself is unchanged. The list is saved with the setup (and the share link) as
+// "th@wth,th@wth"; values from storage or a link are untrusted, so each row must match MINER_ROW_RE.
+const MINERS_MAX = 50;
+const MINER_ROW_RE = /^(\d{1,9}(?:\.\d{1,6})?)@(\d{1,4}(?:\.\d{1,4})?)$/;
+function trimNum(x, dp){ return String(parseFloat(x.toFixed(dp))); }
+function minerRows(){ return Array.from(document.querySelectorAll('#minerList .minerrow')); }
+function validMiners(){
+  const out = [];
+  minerRows().forEach(r=>{
+    const ths = r.children[0].value, ws = r.children[1].value;
+    if(!MINER_ROW_RE.test(ths+'@'+ws)) return;
+    const th = parseFloat(ths), w = parseFloat(ws);
+    if(th > 0 && w > 0) out.push({th, w, ths, ws});
+  });
+  return out;
+}
+function minerSummary(){
+  const rows = validMiners();
+  if(!rows.length) return null;
+  const th = rows.reduce((a,m)=>a+m.th, 0);
+  const w = rows.reduce((a,m)=>a+m.th*m.w, 0) / th;
+  return {th, w};
+}
+function serializeMiners(){ return validMiners().map(m=>m.ths+'@'+m.ws).join(','); }
+function updateMinersStatus(){
+  const s = minerSummary(), el = $id('minerStatus');
+  if(!s){
+    el.classList.remove('warn');
+    el.textContent = "Enter each miner's TH and W/TH (both are shown on the miner in the GoMining app).";
+    return;
+  }
+  const applied = Math.abs(parseFloat($id('th').value) - s.th) < 0.005 && Math.abs(parseFloat($id('watt').value) - s.w) < 0.0005;
+  el.classList.toggle('warn', !applied);
+  el.textContent = applied
+    ? 'Applied: '+fmt(s.th,2)+' TH at a weighted average of '+fmt(s.w,3)+' W/TH.'
+    : 'Not applied: Total Hashpower or Efficiency above was typed by hand. Change a miner row to use this list again ('+fmt(s.th,2)+' TH at '+fmt(s.w,3)+' W/TH).';
+}
+function applyMiners(){
+  const s = minerSummary();
+  if(s){ $id('th').value = trimNum(s.th, 4); $id('watt').value = trimNum(s.w, 4); }
+  calc();
+  updateMinersStatus();
+}
+function addMinerRow(ths, ws){
+  const row = document.createElement('div');
+  row.className = 'minerrow';
+  const a = document.createElement('input');
+  a.type = 'number'; a.min = '0'; a.step = '0.01'; a.placeholder = 'TH'; a.value = ths || '';
+  a.setAttribute('aria-label', 'Miner hashpower in TH');
+  const b = document.createElement('input');
+  b.type = 'number'; b.min = '0'; b.step = '0.5'; b.placeholder = 'W/TH'; b.value = ws || '';
+  b.setAttribute('aria-label', 'Miner efficiency in W/TH');
+  const x = document.createElement('button');
+  x.type = 'button'; x.textContent = 'Remove';
+  a.addEventListener('input', applyMiners);
+  b.addEventListener('input', applyMiners);
+  x.addEventListener('click', ()=>{ row.remove(); $id('minerAdd').disabled = false; applyMiners(); });
+  row.append(a, b, x);
+  $id('minerList').appendChild(row);
+  if(minerRows().length >= MINERS_MAX) $id('minerAdd').disabled = true;
+}
+function setMinersFromString(str){
+  $id('minerList').textContent = '';
+  $id('minerAdd').disabled = false;
+  if(typeof str === 'string' && str.length <= 2000){
+    str.split(',').slice(0, MINERS_MAX).forEach(p=>{ const m = MINER_ROW_RE.exec(p); if(m) addMinerRow(m[1], m[2]); });
+  }
+  $id('miners').open = minerRows().length > 0;
+  updateMinersStatus();
+}
+function initMiners(){
+  $id('minerAdd').addEventListener('click', ()=>addMinerRow());
+  $id('miners').addEventListener('toggle', ()=>{ if($id('miners').open && !minerRows().length) addMinerRow(); });
+  ['th','watt'].forEach(id=>$id(id).addEventListener('input', updateMinersStatus));
+}
+
 // ---- Saved setups (this browser only) + share link --------------------------------------------
 // Everything you type is saved in this browser's own storage under a named setup, so it is still
 // there next visit. Nothing is sent anywhere. NOT saved: the GMT and BTC prices (fed live), the
@@ -1812,6 +1914,7 @@ function snapshotSetup(){
   const v = {};
   SAVE_NUM_IDS.concat(SAVE_SEL_IDS).forEach(id=>{ v[id] = $id(id).value; });
   if(thPriceManual) v.thPrice = $id('thPrice').value;
+  v.miners = serializeMiners();
   v.basisLocked = positionBasis.locked;
   v.basisLiquid = positionBasis.liquid;
   return v;
@@ -1830,6 +1933,7 @@ function applySetup(saved){
     const ok = typeof v[id] === 'string' && Array.from(el.options).some(o=>o.value === v[id]);
     el.value = ok ? v[id] : DEFAULT_SETUP[id];
   });
+  setMinersFromString(v.miners);
   positionBasis.locked = v.basisLocked === 'days' ? 'days' : 'gmt';
   positionBasis.liquid = v.basisLiquid === 'days' ? 'days' : 'gmt';
   if(typeof v.thPrice === 'string' && SAVE_NUM_RE.test(v.thPrice) && v.thPrice !== ''){
@@ -2009,6 +2113,7 @@ function initSaved(){
 }
 
 initTabs();
+initMiners();
 initSaved();
 calc();
 fetchLiveGmtPrice();
