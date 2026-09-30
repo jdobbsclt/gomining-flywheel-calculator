@@ -275,6 +275,18 @@ footer{
 .gap-bar-fill{background:var(--red);}
 .gap-bar-fill.over{background:var(--green);}
 .tag.short{background:rgba(209,79,67,0.15);color:var(--red);}
+
+/* Saved setups bar */
+.profilebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px 0;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;font-size:13px;}
+.profilebar label{color:var(--dim);font-size:12px;}
+.profilebar select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font:inherit;font-size:13px;max-width:200px;}
+.profilebar button,.sharedbanner button{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;}
+.profilebar button:hover,.sharedbanner button:hover{border-color:var(--amber);}
+.profilebar .pfsep{flex:1 1 auto;}
+.profilebar .subtle{margin:0;}
+.sharedbanner{margin:0 0 14px 0;padding:10px 12px;border:1px solid var(--amber);border-radius:10px;background:var(--panel2);font-size:13px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.sharedbanner span{flex:1 1 260px;}
+.sharedbanner[hidden]{display:none;}
 </style>
 </head>
 <body>
@@ -284,6 +296,23 @@ footer{
   <h1>GMT Flywheel <span>Calculators</span></h1>
   <p>Plan a GoMining Flywheel three ways. Enter your farm and the GMT you hold once below; each tab applies a different strategy to the same numbers and tells you what to add.</p>
 </header>
+
+<div class="profilebar" id="profileBar">
+  <label for="profileSel">Saved setup</label>
+  <select id="profileSel" aria-label="Saved setup"></select>
+  <button type="button" id="pfNew">New</button>
+  <button type="button" id="pfDelete">Delete</button>
+  <span class="pfsep"></span>
+  <button type="button" id="pfCopy">Copy link</button>
+  <button type="button" id="pfReset">Reset to defaults</button>
+  <span class="subtle" id="pfStatus" role="status"></span>
+</div>
+<div class="sharedbanner" id="sharedBanner" hidden>
+  <span>You are viewing a setup someone shared with you. It is not saved and does not touch your own saved setups.</span>
+  <button type="button" id="sbSave">Save as my own</button>
+  <button type="button" id="sbDiscard">Go back to mine</button>
+</div>
+
 
 <div class="tabs" role="tablist" aria-label="Flywheel calculators">
   <button class="tab" role="tab" id="tab-traditional" aria-controls="panel-traditional" aria-selected="true">Traditional GMT Flywheel<span class="by">by DracoF</span></button>
@@ -1602,6 +1631,7 @@ function calc(){
   renderOpex(S);
   renderTraditional(S);
   renderModified(S);
+  scheduleSave();
 }
 
 // ---- Tabs ----------------------------------------------------------------------------------
@@ -1645,7 +1675,230 @@ function initTabs(){
   selectTab(location.hash.slice(1), true);
 }
 
+// ---- Saved setups (this browser only) + share link --------------------------------------------
+// Everything you type is saved in this browser's own storage under a named setup, so it is still
+// there next visit. Nothing is sent anywhere. NOT saved: the GMT and BTC prices (fed live), the
+// Mining mode discount and lock pool/votes (fed nightly), and the TH ask price unless typed by hand,
+// so a saved setup can never pin a stale market number.
+const SAVE_KEY = 'gmtFlywheel.saved.v1';
+const SAVE_NUM_IDS = ['th','watt','kwh','svcConst','lockedGmt','liquidGmt','lockedDays','liquidDays',
+  'tradLocked','tradUnlocked','tradKeep','modLocked','modUnlocked','modMin','mktDiscount','btcCutoff',
+  'greedyGrowth','target'];
+const SAVE_SEL_IDS = ['d2','d3','period'];
+const SAVE_NUM_RE = /^-?\d{0,15}\.?\d{0,10}$/;
+const DEFAULT_PROFILE_NAME = 'My setup';
+const NO_STORAGE_MSG = "Saving isn't available in this browser (private mode?). \"Copy link\" still works.";
+const $id = id => document.getElementById(id);
+
+let saveReady = false;     // false until the saved setup has been applied, so defaults never overwrite it
+let sharedMode = false;    // true while showing a setup from a share link: nothing is auto-saved
+let saveTimer = null;
+let storageOk = true;
+let DEFAULT_SETUP = null;
+let store = {profiles:[{name:DEFAULT_PROFILE_NAME, v:null}], current:DEFAULT_PROFILE_NAME};
+
+function snapshotSetup(){
+  const v = {};
+  SAVE_NUM_IDS.concat(SAVE_SEL_IDS).forEach(id=>{ v[id] = $id(id).value; });
+  if(thPriceManual) v.thPrice = $id('thPrice').value;
+  v.basisLocked = positionBasis.locked;
+  v.basisLiquid = positionBasis.liquid;
+  return v;
+}
+
+// Puts a setup into the page. Anything missing or invalid falls back to the default, so switching
+// setups never leaves the previous one's values behind. Values from storage or a link are untrusted.
+function applySetup(saved){
+  const v = Object.assign({}, DEFAULT_SETUP, (saved && typeof saved === 'object') ? saved : {});
+  SAVE_NUM_IDS.forEach(id=>{
+    const val = v[id];
+    $id(id).value = (typeof val === 'string' && SAVE_NUM_RE.test(val)) ? val : DEFAULT_SETUP[id];
+  });
+  SAVE_SEL_IDS.forEach(id=>{
+    const el = $id(id);
+    const ok = typeof v[id] === 'string' && Array.from(el.options).some(o=>o.value === v[id]);
+    el.value = ok ? v[id] : DEFAULT_SETUP[id];
+  });
+  positionBasis.locked = v.basisLocked === 'days' ? 'days' : 'gmt';
+  positionBasis.liquid = v.basisLiquid === 'days' ? 'days' : 'gmt';
+  if(typeof v.thPrice === 'string' && SAVE_NUM_RE.test(v.thPrice) && v.thPrice !== ''){
+    thPriceManual = true;
+    $id('thPrice').value = v.thPrice;
+    $id('thPriceNote').innerHTML = 'Manual entry — <a href="#" onclick="useThPriceEstimate();return false;">use the estimate</a>';
+  }else{
+    thPriceManual = false;
+    $id('thPriceNote').textContent = '';
+  }
+}
+
+function setPfStatus(text, ms){
+  const el = $id('pfStatus');
+  el.textContent = text;
+  if(ms) setTimeout(()=>{ if(el.textContent === text) el.textContent = storageOk ? '' : NO_STORAGE_MSG; }, ms);
+}
+
+function loadStore(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    if(!d || !Array.isArray(d.profiles)) return;
+    const seen = new Set();
+    const ps = [];
+    d.profiles.forEach(p=>{
+      if(!p || typeof p.name !== 'string' || !p.name || !p.v || typeof p.v !== 'object') return;
+      const name = p.name.slice(0,40);
+      if(seen.has(name) || ps.length >= 50) return;
+      seen.add(name);
+      ps.push({name, v:p.v});
+    });
+    if(ps.length){
+      store.profiles = ps;
+      store.current = ps.some(p=>p.name === d.current) ? d.current : ps[0].name;
+    }
+  }catch(err){ /* unreadable or blocked storage: start from the defaults; the next save replaces it */ }
+}
+function writeStore(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(store));
+    storageOk = true;
+    if($id('pfStatus').textContent === NO_STORAGE_MSG) $id('pfStatus').textContent = '';
+  }catch(err){
+    storageOk = false;
+    setPfStatus(NO_STORAGE_MSG);
+  }
+}
+function currentProfile(){ return store.profiles.find(p=>p.name === store.current) || store.profiles[0]; }
+
+function saveNow(){
+  if(!saveReady || sharedMode) return;
+  clearTimeout(saveTimer); saveTimer = null;
+  currentProfile().v = snapshotSetup();
+  writeStore();
+}
+function scheduleSave(){
+  if(!saveReady || sharedMode) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 300);
+}
+window.addEventListener('pagehide', ()=>{ if(saveTimer) saveNow(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && saveTimer) saveNow(); });
+
+function renderProfileBar(){
+  const sel = $id('profileSel');
+  sel.textContent = '';
+  store.profiles.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p.name; o.textContent = p.name;
+    sel.appendChild(o);
+  });
+  sel.value = store.current;
+  if(!storageOk) $id('pfStatus').textContent = NO_STORAGE_MSG;
+}
+
+function leaveSharedMode(){
+  sharedMode = false;
+  $id('sharedBanner').hidden = true;
+  try{ history.replaceState(null, '', location.pathname + location.hash); }catch(err){ /* file:// or sandboxed */ }
+}
+function askProfileName(){
+  const raw = prompt('Name this setup (for example: Josh, Kat):', '');
+  if(raw === null) return null;
+  const name = raw.trim().slice(0,40);
+  if(!name) return null;
+  if(store.profiles.some(p=>p.name === name)){ alert('You already have a setup called "'+name+'". Pick a different name.'); return null; }
+  return name;
+}
+function switchProfile(name){
+  if(saveTimer) saveNow();
+  store.current = name;
+  if(sharedMode) leaveSharedMode();
+  applySetup(currentProfile().v);
+  renderProfileBar();
+  writeStore();
+  calc();
+}
+
+function shareLink(){
+  const enc = btoa(JSON.stringify(snapshotSetup())).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const tab = TABS.find(t=>$id('tab-'+t).getAttribute('aria-selected') === 'true') || DEFAULT_TAB;
+  return location.href.split(/[?#]/)[0] + '?p=' + enc + '#' + tab;
+}
+
+function initSaved(){
+  DEFAULT_SETUP = snapshotSetup();        // the page as shipped, taken before anything is applied
+  loadStore();
+  let fromLink = null;
+  const q = new URLSearchParams(location.search).get('p');
+  if(q && q.length < 4000){
+    try{
+      const obj = JSON.parse(atob(q.replace(/-/g,'+').replace(/_/g,'/')));
+      if(obj && typeof obj === 'object' && !Array.isArray(obj)) fromLink = obj;
+    }catch(err){ /* a mangled link: fall through to the saved setup */ }
+  }
+  if(fromLink){
+    sharedMode = true;
+    $id('sharedBanner').hidden = false;
+    applySetup(fromLink);
+  }else{
+    applySetup(currentProfile().v);
+  }
+  renderProfileBar();
+
+  $id('profileSel').addEventListener('change', e=>switchProfile(e.target.value));
+  $id('pfNew').addEventListener('click', ()=>{
+    const name = askProfileName();
+    if(!name) return;
+    if(saveTimer) saveNow();
+    store.profiles.push({name, v:snapshotSetup()});
+    store.current = name;
+    if(sharedMode) leaveSharedMode();
+    renderProfileBar(); writeStore();
+    setPfStatus('Saved as "'+name+'".', 2500);
+  });
+  $id('pfDelete').addEventListener('click', ()=>{
+    const name = store.current;
+    if(!confirm('Delete the saved setup "'+name+'"? This cannot be undone.')) return;
+    clearTimeout(saveTimer); saveTimer = null;
+    store.profiles = store.profiles.filter(p=>p.name !== name);
+    if(!store.profiles.length) store.profiles.push({name:DEFAULT_PROFILE_NAME, v:null});
+    store.current = store.profiles[0].name;
+    if(sharedMode) leaveSharedMode();
+    applySetup(currentProfile().v);
+    renderProfileBar(); writeStore(); calc();
+  });
+  $id('pfReset').addEventListener('click', ()=>{
+    if(!confirm('Reset every input to the defaults? '+(sharedMode ? '' : 'This overwrites the saved setup "'+store.current+'".'))) return;
+    applySetup(null);
+    calc();
+  });
+  $id('pfCopy').addEventListener('click', ()=>{
+    const url = shareLink();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(()=>setPfStatus('Link copied.', 2500), ()=>prompt('Copy this link:', url));
+    }else{
+      prompt('Copy this link:', url);
+    }
+  });
+  $id('sbSave').addEventListener('click', ()=>{
+    const name = askProfileName();
+    if(!name) return;
+    store.profiles.push({name, v:snapshotSetup()});
+    store.current = name;
+    leaveSharedMode();
+    renderProfileBar(); writeStore();
+    setPfStatus('Saved as "'+name+'".', 2500);
+  });
+  $id('sbDiscard').addEventListener('click', ()=>{
+    leaveSharedMode();
+    applySetup(currentProfile().v);
+    calc();
+  });
+  saveReady = true;
+}
+
 initTabs();
+initSaved();
 calc();
 fetchLiveGmtPrice();
 loadMiningMode();
