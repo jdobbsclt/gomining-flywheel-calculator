@@ -12,6 +12,14 @@ The page opens on **Traditional**. The open tab is kept in the URL (`#traditiona
 
 **[Live site →](https://jdobbsclt.github.io/gomining-flywheel-calculator/)**
 
+## Saved setups and share links
+
+Everything you type is saved automatically in **your own browser** (nothing is sent anywhere), so your numbers are still there next visit. The bar above the tabs lets you keep several named setups (for example one per account), switch between them, delete one, or **Reset to defaults**.
+
+**Copy link** puts your current inputs into a URL. Open it on your phone, or send it to someone: they see your numbers in a banner-marked "shared setup" that is never saved over their own, and can keep it with **Save as my own**.
+
+Not saved, on purpose: the GMT and BTC prices (live), the Mining mode discount and lock pool/votes (fed nightly), and the TH ask price unless you typed it by hand. That way a saved setup can never pin a stale market number. Saved setups live only in that browser on that device: clearing site data or using private mode loses them (use Copy link to keep a copy).
+
 ## The shared inputs (above the tabs)
 
 Farm & market (TH, efficiency, GMT price, power rate, service constant), the maintenance discount stack, and **My GMT Position**: the GMT you actually hold, locked and liquid (or the same amounts as days of maintenance cover; type either and the other updates). The boxes start empty, so a new visitor sees what they need to acquire. Each target on the Traditional and Modified tabs shows its worth in GMT next to it. Every tab reads the same numbers, so you enter them once.
