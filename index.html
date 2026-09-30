@@ -235,6 +235,11 @@ footer{
 .tab:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
 .tab-panel{margin-top:16px;}
 .tab-panel[hidden]{display:none;}
+.key-hint{color:var(--amber);margin:0 0 8px;}
+.key-inputs input[type=number]{border-color:var(--amber);}
+.market-settings{border-top:1px solid var(--border);margin-top:14px;padding-top:12px;opacity:.8;}
+.market-settings:hover,.market-settings:focus-within{opacity:1;}
+.market-title{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);margin-bottom:8px;}
 .strategy-link{margin:0 0 12px;}
 .strategy-link a{display:inline-block;padding:7px 14px;font-size:13px;color:var(--amber);border:1px solid var(--amber);border-radius:8px;text-decoration:none;}
 .strategy-link a:hover,.strategy-link a:focus-visible{background:var(--amber);color:var(--bg,#111);outline:none;}
@@ -339,7 +344,8 @@ footer{
   <!-- FARM & MARKET -->
   <div class="panel">
     <h2>Farm &amp; Market</h2>
-    <div class="row2">
+    <div class="subtle key-hint">Start here: enter your hashpower and efficiency.</div>
+    <div class="row2 key-inputs">
       <div class="field">
         <label>Total Hashpower <b id="thOut">20.00</b> TH</label>
         <input type="number" id="th" value="20.00" step="0.01" oninput="calc()">
@@ -350,6 +356,8 @@ footer{
         <div class="subtle">12W = current floor tier · 15W = legacy</div>
       </div>
     </div>
+    <div class="market-settings">
+    <div class="market-title">Market settings · rarely need changing</div>
     <div class="row2">
       <div class="field">
         <label>GMT Price <b id="gmtPriceOut">$0.3000</b></label>
@@ -366,6 +374,7 @@ footer{
       <label>Service Constant <b id="svcConstOut">$0.0089</b></label>
       <input type="number" id="svcConst" value="0.0089" step="0.0001" oninput="calc()">
       <div class="subtle">Flat per-TH service fee constant (0% discount)</div>
+    </div>
     </div>
   </div>
 
