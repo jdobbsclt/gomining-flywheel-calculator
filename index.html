@@ -1034,6 +1034,31 @@ function updateGmtPriceStatus(){
 
 setInterval(updateGmtPriceStatus, 30000);
 
+// ---- Nightly data files (mining-mode.json, lock-model.json) ----
+// Fetched by absolute address built from the clean site address, never from the raw page address:
+// a bookmark or shared link with odd pieces in it (e.g. user@) makes iOS browsers reject a relative address
+// ("URL is not valid or contains user credentials"). Falls back to the official address if that still fails.
+const DATA_CANONICAL_BASE = 'https://jdobbsclt.github.io/gomining-flywheel-calculator/';
+async function fetchDataFile(name){
+  const bust = '?t='+Date.now();
+  const urls = [];
+  if(location.protocol === 'https:' || location.protocol === 'http:'){
+    urls.push(location.origin + location.pathname.replace(/[^\/]*$/, '') + name + bust);
+  }else{
+    urls.push(name + bust);                      // file:// preview
+  }
+  urls.push(DATA_CANONICAL_BASE + name + bust);
+  let lastErr;
+  for(const u of urls){
+    try{
+      const res = await fetch(u, {cache:'no-store'});
+      if(res.ok) return res;
+      lastErr = new Error('HTTP '+res.status);
+    }catch(err){ lastErr = err; }
+  }
+  throw lastErr;
+}
+
 // ---- Mining Mode discount (auto-updated nightly into mining-mode.json) ----
 const MM_DEFAULT = 1.35;        // used only if mining-mode.json can't be loaded
 const MM_DEFAULT_AS_OF = '2026-09-26';
@@ -1048,7 +1073,7 @@ function setMiningModeStatus(text, isWarn){
 
 async function loadMiningMode(){
   try{
-    const res = await fetch('mining-mode.json?t='+Date.now(), {cache:'no-store'});
+    const res = await fetchDataFile('mining-mode.json');
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     // Must be a real JSON number: Number(null), Number('') and Number(false) are all 0,
@@ -1106,7 +1131,7 @@ function setLockStatus(text, isWarn){
 
 async function loadLockModel(){
   try{
-    const res = await fetch('lock-model.json?t='+Date.now(), {cache:'no-store'});
+    const res = await fetchDataFile('lock-model.json');
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     // Real numbers within sane ranges only: a null/string/0 must never silently replace the pool.
