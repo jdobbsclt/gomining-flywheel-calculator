@@ -1080,7 +1080,7 @@ async function loadMiningMode(){
   }catch(err){
     document.getElementById('d4').value = MM_DEFAULT;
     calc();
-    setMiningModeStatus('⚠ Couldn\'t load the latest value — showing '+MM_DEFAULT+'% (as of '+MM_DEFAULT_AS_OF+'). Confirm in the GoMining app.', true);
+    setMiningModeStatus('⚠ Couldn\'t load the latest value — showing '+MM_DEFAULT+'% (as of '+MM_DEFAULT_AS_OF+'). Confirm in the GoMining app. (Reason: '+((err && err.message) || err)+')', true);
   }
 }
 
