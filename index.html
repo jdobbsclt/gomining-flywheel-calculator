@@ -283,6 +283,9 @@ footer{
 .ck.info{background:var(--violet-line);}
 
 #posPanel{grid-column:1/-1;}
+#rewardsPanel{grid-column:1/-1;}
+.stat-grid.three{grid-template-columns:repeat(3,1fr);}
+@media(max-width:600px){.stat-grid.three{grid-template-columns:1fr;}}
 .posgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
 @media(max-width:860px){.posgrid{grid-template-columns:1fr 1fr;}}
 @media(max-width:420px){.posgrid{grid-template-columns:1fr;}}
@@ -492,6 +495,42 @@ footer{
       </div>
     </div>
     <div class="subtle">Enter what you hold today. Leave a box empty if you have none. "Days" = days of maintenance your GMT covers, as on GoMining's Maintenance Discount page (counted after your VIP, service and mining-mode discounts, before the token discount). Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
+  </div>
+
+  <!-- WEEKLY REWARDS & SAVINGS -->
+  <div class="panel" id="rewardsPanel">
+    <h2>My Weekly Rewards &amp; Savings</h2>
+    <div class="stat-grid three">
+      <div class="stat">
+        <div class="lbl">Lock Rewards</div>
+        <div class="val" id="rwLockUsd">—</div>
+        <div class="sub" id="rwLockGmt">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Saved by Discounts</div>
+        <div class="val" id="rwSaveUsd">—</div>
+        <div class="sub" id="rwSaveGmt">—</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Combined Benefit</div>
+        <div class="val" id="rwTotalUsd">—</div>
+        <div class="sub" id="rwTotalGmt">—</div>
+      </div>
+    </div>
+    <div class="table-wrap"><table class="compare-table">
+      <tr><th>Maintenance Discount</th><th>Rate</th><th>GMT Saved / Week</th><th>USD Saved / Week</th></tr>
+      <tbody id="rwSaveRows"></tbody>
+    </table></div>
+    <div class="subtle" id="rwNote">—</div>
+    <details class="formula">
+      <summary>How this is calculated</summary>
+      <div class="formula-body">
+        <code>discount saving (GMT/wk) = 7 × daily maintenance at 0% × that discount's rate
+lock rewards (GMT/wk) = POOL × v ÷ (T_others + v),   v = locked GMT × lock-period factor
+combined = lock rewards + discount savings</code>
+        <p style="margin:6px 0 0 0;">Discounts add together (token + VIP + service + mining mode), so each one's saving is simply its own rate applied to your undiscounted maintenance bill, and the rows sum exactly to the total. Lock rewards use the same model as the OPEX tab, at the Lock Period chosen there (Max by default), and assume you keep re-extending the lock. The token discount only counts what your locked + liquid GMT earns; the rest of your locked GMT's value shows up as lock rewards, not as a discount.</p>
+      </div>
+    </details>
   </div>
 
 </div>
@@ -1657,6 +1696,37 @@ function renderShared(S){
     : fmt(S.daysCovered,0)+" days covered — "+fmt(Math.max(0,(S.tier+1)*TIER_DAYS-S.daysCovered),0)+" more days for the next 1%.");
 }
 
+// ---- Weekly rewards from the lock + GMT saved by the discounts (shared, shown on every tab) ----
+function renderRewards(S){
+  const {gmtPrice, f, lockedGMT, perDay0, d1, d2, d3, d4, totalDiscount, periodSel} = S;
+  const set = (id, text) => { document.getElementById(id).textContent = text; };
+  const tOthers = Math.max(0, lockModel.totalVotes - lockedGMT*f);
+  const rewardGMT = modelWeekly(lockedGMT, f, tOthers, lockModel.weeklyPool);
+  const apr = modelApr(lockedGMT, f, tOthers, lockModel.weeklyPool);
+  const base7 = 7*perDay0;                               // weekly maintenance at 0% discount, in GMT
+  const saveGMT = base7*totalDiscount;
+  const totalGMT = rewardGMT + saveGMT;
+  const periodName = periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','');
+
+  set('rwLockUsd', usd(rewardGMT*gmtPrice));
+  set('rwLockGmt', lockedGMT > 0 ? fmt(rewardGMT,2)+" GMT/wk · "+fmt(apr*100,2)+"% APR" : "nothing locked");
+  set('rwSaveUsd', usd(saveGMT*gmtPrice));
+  set('rwSaveGmt', fmt(saveGMT,2)+" GMT/wk · "+fmt(totalDiscount*100,2)+"% off");
+  set('rwTotalUsd', usd(totalGMT*gmtPrice));
+  set('rwTotalGmt', fmt(totalGMT,2)+" GMT/wk");
+
+  const td = 'style="font-family:var(--sans);"';
+  const row = (label, rate) => '<tr><td '+td+'>'+label+'</td><td>'+fmt(rate*100,2)+'%</td><td>'+fmt(base7*rate,2)+' GMT</td><td>'+usd(base7*rate*gmtPrice)+'</td></tr>';
+  document.getElementById('rwSaveRows').innerHTML =
+      row('Token (from your locked + liquid GMT)', d1)
+    + row('VIP tier', d3)
+    + row('Service streak', d2)
+    + row('Mining mode', d4)
+    + '<tr><td '+td+'><b>Total</b></td><td><b>'+fmt(totalDiscount*100,2)+'%</b></td><td><b>'+fmt(saveGMT,2)+' GMT</b></td><td><b>'+usd(saveGMT*gmtPrice)+'</b></td></tr>';
+
+  set('rwNote', 'Without any discount your maintenance would be '+fmt(base7,2)+' GMT/wk ('+usd(base7*gmtPrice)+'); with them it is '+fmt(S.weeklyOpexGMT,2)+' GMT/wk. Lock rewards assume the '+periodName+' lock period set on the OPEX tab, re-extended as it decays.');
+}
+
 // ---- Tab: OPEX 125% Flywheel ------------------------------------------------------------
 function renderOpex(S){
   const {gmtPrice, target, periodSel, f, lockedGMT, liquidGMT, totalGmt, dm, perDay0, nonToken,
@@ -1778,6 +1848,7 @@ function calc(){
   syncModInputs();
   const S = computeShared(readInputs());
   renderShared(S);
+  renderRewards(S);
   renderOpex(S);
   renderTraditional(S);
   renderModified(S);
