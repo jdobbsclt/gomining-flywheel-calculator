@@ -517,17 +517,21 @@ footer{
         <div class="sub" id="rwTotalGmt">—</div>
       </div>
     </div>
-    <div class="row2" style="margin-top:14px;">
-      <div class="field">
-        <label>Pool reward <b>BTC, one day</b></label>
-        <input type="number" id="poolRewardBtc" value="" step="any" min="0" placeholder="e.g. 0.00003508" oninput="onPoolRewardInput()">
-      </div>
-      <div class="field">
-        <label>Earned by <b>TH</b></label>
-        <input type="number" id="poolRewardTh" value="" step="any" min="0" placeholder="your TH that day" oninput="calc()">
-      </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Pool reward <b>BTC, one day</b></label>
+      <input type="number" id="poolRewardBtc" value="" step="any" min="0" placeholder="e.g. 0.00003508" oninput="onPoolRewardInput()">
+      <div class="subtle">Copy the <b>Pool reward</b> line (in BTC) from any day's "Mining reward" on GoMining's Rewards page. It is your whole farm's daily mining income, before maintenance. The calculator assumes it was earned by the TH in My Farm above. Leave empty to hide the profit lines. Saved with your setup; not fed live.</div>
     </div>
-    <div class="subtle">Copy the <b>Pool reward</b> line (in BTC) from any day's "Mining reward" on GoMining's Rewards page. It is your whole farm's daily mining income, before maintenance. Enter the TH you had that day in the second box (it fills with your current TH when you type the reward); the calculator divides it for you, so profit still scales if you change TH above. Leave empty to hide the profit lines. Saved with your setup; not fed live.</div>
+    <details class="miners" style="margin-bottom:10px;">
+      <summary>Earned with a different amount of TH? Advanced</summary>
+      <div class="miners-body">
+        <div class="field">
+          <label>Pool reward was earned by <b>TH</b></label>
+          <input type="number" id="poolRewardTh" value="" step="any" min="0" placeholder="same as My Farm TH" oninput="calc()">
+          <div class="subtle">Fills itself with your My Farm TH when you paste a reward. Change it only if you had a different amount of TH on the day you copied the reward. It lets profit scale correctly when you change TH in My Farm to test "what if" setups.</div>
+        </div>
+      </div>
+    </details>
     <div class="table-wrap"><table class="compare-table">
       <tr><th>Daily Profit</th><th>USD / Day</th></tr>
       <tbody id="rwProfitRows"></tbody>
@@ -1768,7 +1772,7 @@ function renderRewards(S){
   }else{
     profitHtml = prow('Maintenance after all discounts', signed(-maintDayUsd))
       + prow('Lock rewards (weekly ÷ 7)', signed(lockDayUsd))
-      + '<tr><td colspan="2" '+td+'>'+(poolBtc > 0 ? 'Enter the TH you had that day (box above) to see daily profit.' : 'Enter your daily Pool reward (BTC) above to see daily profit.')+'</td></tr>';
+      + '<tr><td colspan="2" '+td+'>'+(poolBtc > 0 ? 'Enter a TH amount in the Advanced box above, or fill My Farm TH, to see daily profit.' : 'Enter your daily Pool reward (BTC) above to see daily profit.')+'</td></tr>';
   }
   document.getElementById('rwProfitRows').innerHTML = profitHtml;
 
