@@ -358,10 +358,10 @@ footer{
 
 <div class="grid" id="sharedGrid">
 
-  <!-- MY FARM -->
-  <div class="panel">
-    <h2>My Farm</h2>
-    <div class="subtle key-hint">Start here: enter your hashpower and efficiency.</div>
+  <!-- MY FARM & DISCOUNTS -->
+  <div class="panel" style="grid-column:1/-1;">
+    <h2>My Farm &amp; Discounts</h2>
+    <div class="subtle key-hint">Start here: enter your hashpower, efficiency, VIP tier and service streak.</div>
     <div class="row2 key-inputs">
       <div class="field">
         <label>Total Hashpower <b id="thOut">20.00</b> TH</label>
@@ -376,60 +376,20 @@ footer{
     <details class="miners" id="miners">
       <summary>Miners at different efficiencies? Enter each miner</summary>
       <div class="miners-body">
-        <div class="subtle">GoMining charges each miner at its own W/TH. List them here and the two boxes above are filled in for you: TH added up, efficiency averaged by TH. That gives the same daily cost as GoMining's per-miner total.</div>
+        <div class="subtle">GoMining charges each miner at its own W/TH. List them here and the two boxes above are filled in for you: TH added up, efficiency averaged by TH.</div>
         <div class="minerhead"><span>TH</span><span>W/TH</span><span></span></div>
         <div id="minerList"></div>
         <button type="button" id="minerAdd" class="minerbtn">Add miner</button>
         <div class="subtle" id="minerStatus" role="status"></div>
       </div>
     </details>
+
     <div class="market-settings">
-    <div class="market-title">Market settings · rarely need changing</div>
-    <div class="row2">
-      <div class="field">
-        <label>GMT Price <b id="gmtPriceOut">$0.3000</b></label>
-        <input type="number" id="gmtPrice" value="0.3000" step="0.0001" oninput="onGmtPriceInput()">
-        <div class="subtle" id="gmtPriceStatus">Fetching live price…</div>
-      </div>
-      <div class="field">
-        <label>Power Rate <b id="kwhOut">$0.0500</b>/kWh</label>
-        <input type="number" id="kwh" value="0.05" step="0.001" oninput="calc()">
-        <div class="subtle">Platform tariff constant, not your utility bill</div>
-      </div>
-    </div>
-    <div class="field">
-      <label>Service Constant <b id="svcConstOut">$0.0089</b></label>
-      <input type="number" id="svcConst" value="0.0089" step="0.0001" oninput="calc()">
-      <div class="subtle">Flat per-TH service fee constant (0% discount)</div>
-    </div>
-    </div>
-    <div class="market-settings">
-      <div class="market-title">Your rewards</div>
+      <div class="market-title">Maintenance discounts</div>
       <div class="row2">
         <div class="field">
-          <label>Daily pool reward <b>BTC</b></label>
-          <input type="number" id="poolRewardBtc" value="" step="any" min="0" placeholder="e.g. 0.00003508" oninput="calc()">
-          <div class="subtle">From GoMining → Rewards → Pool reward.</div>
-        </div>
-        <div class="field">
-          <label>Rewards reinvested into GMT?</label>
-          <select id="reinvestFee" onchange="calc()">
-            <option value="yes" selected>Yes (2.25% fee)</option>
-            <option value="no">No (take BTC)</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DISCOUNTS -->
-  <div class="panel">
-    <h2>Maintenance Discount Stack</h2>
-    <div class="subtle key-hint">Enter your VIP Tier and Service Streak.</div>
-    <div class="row2">
-      <div class="field">
-        <label>VIP Tier <b id="d3Out">0.0%</b></label>
-        <select id="d3" class="key" onchange="calc()">
+          <label>VIP Tier <b id="d3Out">0.0%</b></label>
+          <select id="d3" class="key" onchange="calc()">
           <option value="0.0" selected>Bronze I — 0.0%</option>
           <option value="0.3">Bronze II — 0.3%</option>
           <option value="0.6">Silver I — 0.6%</option>
@@ -452,11 +412,11 @@ footer{
           <option value="5.7">Legend V — 5.7%</option>
           <option value="6.0">Elite — 6.0%</option>
         </select>
-        <div class="subtle">Your tier is shown in the GoMining app (VIP page).</div>
-      </div>
-      <div class="field">
-        <label>Service Streak <b id="d2Out">0.3%</b></label>
-        <select id="d2" class="key" onchange="calc()">
+          <div class="subtle">Shown in the GoMining app (VIP page).</div>
+        </div>
+        <div class="field">
+          <label>Service Streak <b id="d2Out">0.3%</b></label>
+          <select id="d2" class="key" onchange="calc()">
           <option value="0.3" selected>Day 1 — 0.3%</option>
           <option value="0.6">Day 2 — 0.6%</option>
           <option value="0.9">Day 3 — 0.9%</option>
@@ -468,26 +428,68 @@ footer{
           <option value="2.7">Day 9 — 2.7%</option>
           <option value="3.0">Day 10 — 3.0%</option>
         </select>
-        <div class="subtle">+0.3%/day, resets on any missed day</div>
+          <div class="subtle">+0.3%/day, resets on any missed day.</div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Token Discount <b id="d1Out">20.0%</b></label>
+          <div class="subtle">Automatic: +1% per 18 days of maintenance your GMT covers, up to 20%.</div>
+          <div class="subtle" id="d1Info">—</div>
+        </div>
+        <div class="field">
+          <label>Mining Mode (Solo) <b id="d4Out">1.35%</b></label>
+          <input type="hidden" id="d4" value="1.35">
+          <div class="subtle">Automatic: updated nightly from the weekly vote.</div>
+          <div class="subtle" id="d4Status">Loading latest value…</div>
+        </div>
+      </div>
+      <div class="discount-sum">
+        <span>Total Discount Applied</span>
+        <b id="dTotalOut">21.65%</b>
       </div>
     </div>
-    <div class="row2">
-      <div class="field">
-        <label>Token Discount <b id="d1Out">20.0%</b></label>
-        <div class="subtle">Automatic: +1% for every 18 days of maintenance your locked + liquid GMT covers, up to 20% at 360 days.</div>
-        <div class="subtle" id="d1Info">—</div>
-      </div>
-      <div class="field">
-        <label>Mining Mode (Solo) <b id="d4Out">1.35%</b></label>
-        <input type="hidden" id="d4" value="1.35">
-        <div class="subtle">Set by the weekly veGOMINING vote. Not editable: updated automatically each night.</div>
-        <div class="subtle" id="d4Status">Loading latest value…</div>
+
+    <div class="market-settings">
+      <div class="market-title">Your rewards</div>
+      <div class="row2">
+        <div class="field">
+          <label>Daily pool reward <b>BTC</b></label>
+          <input type="number" id="poolRewardBtc" value="" step="any" min="0" placeholder="e.g. 0.00003508" oninput="calc()">
+          <div class="subtle">From GoMining → Rewards → Pool reward.</div>
+        </div>
+        <div class="field">
+          <label>Rewards reinvested into GMT?</label>
+          <select id="reinvestFee" onchange="calc()">
+            <option value="yes" selected>Yes (2.25% fee)</option>
+            <option value="no">No (take BTC)</option>
+          </select>
+        </div>
       </div>
     </div>
-    <div class="discount-sum">
-      <span>Total Discount Applied</span>
-      <b id="dTotalOut">21.65%</b>
-    </div>
+
+    <details class="miners" id="marketSettings">
+      <summary>Market settings · rarely need changing</summary>
+      <div class="miners-body">
+        <div class="row2">
+          <div class="field">
+            <label>GMT Price <b id="gmtPriceOut">$0.3000</b></label>
+            <input type="number" id="gmtPrice" value="0.3000" step="0.0001" oninput="onGmtPriceInput()">
+            <div class="subtle" id="gmtPriceStatus">Fetching live price…</div>
+          </div>
+          <div class="field">
+            <label>Power Rate <b id="kwhOut">$0.0500</b>/kWh</label>
+            <input type="number" id="kwh" value="0.05" step="0.001" oninput="calc()">
+            <div class="subtle">Platform tariff constant, not your utility bill</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Service Constant <b id="svcConstOut">$0.0089</b></label>
+          <input type="number" id="svcConst" value="0.0089" step="0.0001" oninput="calc()">
+          <div class="subtle">Flat per-TH service fee constant (0% discount)</div>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- POSITION -->
