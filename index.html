@@ -403,6 +403,23 @@ footer{
       <div class="subtle">Flat per-TH service fee constant (0% discount)</div>
     </div>
     </div>
+    <div class="market-settings">
+      <div class="market-title">Your rewards</div>
+      <div class="row2">
+        <div class="field">
+          <label>Daily pool reward <b>BTC</b></label>
+          <input type="number" id="poolRewardBtc" value="" step="any" min="0" placeholder="e.g. 0.00003508" oninput="calc()">
+          <div class="subtle">From GoMining → Rewards → Pool reward.</div>
+        </div>
+        <div class="field">
+          <label>Rewards reinvested into GMT?</label>
+          <select id="reinvestFee" onchange="calc()">
+            <option value="yes" selected>Yes (2.25% fee)</option>
+            <option value="no">No (take BTC)</option>
+          </select>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- DISCOUNTS -->
@@ -499,52 +516,35 @@ footer{
 
   <!-- WEEKLY REWARDS & SAVINGS -->
   <div class="panel" id="rewardsPanel">
-    <h2>My Weekly Rewards &amp; Savings</h2>
-    <div class="row2">
-      <div class="field">
-        <label>Daily pool reward <b>BTC</b></label>
-        <input type="number" id="poolRewardBtc" value="" step="any" min="0" placeholder="e.g. 0.00003508" oninput="calc()">
-        <div class="subtle">From GoMining → Rewards → Pool reward.</div>
-      </div>
-      <div class="field">
-        <label>Rewards reinvested into GMT?</label>
-        <select id="reinvestFee" onchange="calc()">
-          <option value="yes" selected>Yes (2.25% fee)</option>
-          <option value="no">No (take BTC)</option>
-        </select>
-      </div>
+    <h2>Where You Stand Today</h2>
+    <div class="field" style="max-width:220px;">
+      <label>Show amounts per</label>
+      <select id="rewardPeriod" onchange="calc()">
+        <option value="day" selected>Day</option>
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
     </div>
     <div class="table-wrap"><table class="compare-table">
-      <tr><th>Daily profit</th><th>USD / day</th></tr>
+      <tr><th>Profit</th><th id="rwUsdHead">USD / day</th><th id="rwGmtHead">GMT / day</th></tr>
       <tbody id="rwProfitRows"></tbody>
-    </table></div>
-    <div class="stat-grid three">
-      <div class="stat">
-        <div class="lbl">Lock Rewards</div>
-        <div class="val" id="rwLockUsd">—</div>
-        <div class="sub" id="rwLockGmt">—</div>
-      </div>
-      <div class="stat">
-        <div class="lbl">Saved by Discounts</div>
-        <div class="val" id="rwSaveUsd">—</div>
-        <div class="sub" id="rwSaveGmt">—</div>
-      </div>
-      <div class="stat">
-        <div class="lbl">Combined Benefit</div>
-        <div class="val" id="rwTotalUsd">—</div>
-        <div class="sub" id="rwTotalGmt">—</div>
-      </div>
-    </div>
-    <div class="table-wrap"><table class="compare-table">
-      <tr><th>Discount</th><th>Rate</th><th>GMT / week</th><th>USD / week</th></tr>
-      <tbody id="rwSaveRows"></tbody>
     </table></div>
     <div class="subtle" id="rwNote">—</div>
     <details class="formula">
+      <summary>See each discount</summary>
+      <div class="formula-body">
+        <table class="compare-table">
+          <tr><th>Discount</th><th>Rate</th><th id="rwDiscGmtHead">GMT saved</th><th id="rwDiscUsdHead">USD saved</th></tr>
+          <tbody id="rwSaveRows"></tbody>
+        </table>
+      </div>
+    </details>
+    <details class="formula">
       <summary>How this is calculated</summary>
       <div class="formula-body">
-        <code>daily profit = pool reward × BTC price − maintenance − reinvest fee (2.25% of profit, approximate)
-discount saving = 7 × daily maintenance at 0% × discount rate
+        <code>profit = pool reward × BTC price − maintenance − reinvest fee (2.25% of profit, approximate) + lock rewards
+discount saving = daily maintenance at 0% × discount rate
 lock rewards = POOL × v ÷ (T_others + v),  v = locked GMT × lock-period factor</code>
       </div>
     </details>
@@ -556,7 +556,7 @@ lock rewards = POOL × v ÷ (T_others + v),  v = locked GMT × lock-period facto
 <div class="grid">
 
   <!-- TARGETS -->
-  <div class="panel">
+  <div class="panel" style="grid-column:1/-1;">
     <h2>The Flywheel's Targets</h2>
     <div class="row2">
       <div class="field">
@@ -579,12 +579,6 @@ lock rewards = POOL × v ÷ (T_others + v),  v = locked GMT × lock-period facto
     <div class="subtle">Defaults are DracoF's 360 locked / 140 unlocked = 500 days. "Days" are GoMining's maintenance days for your farm, as on the Maintenance Discount page.</div>
   </div>
 
-  <!-- WEEKLY CHECKLIST -->
-  <div class="panel">
-    <h2>Weekly Checklist</h2>
-    <ul class="checklist" id="tradChecklist"></ul>
-    <div class="subtle">DracoF's advice: decide no more than once a week, on the day your lock dividends arrive (usually Tuesday).</div>
-  </div>
 
   <!-- RESULTS -->
   <div class="panel results">
@@ -636,6 +630,13 @@ lock rewards = POOL × v ÷ (T_others + v),  v = locked GMT × lock-period facto
     <div class="subtle" id="tradFeeNote"></div>
   </div>
 
+  <!-- WEEKLY CHECKLIST -->
+  <div class="panel" style="grid-column:1/-1;">
+    <h2>Weekly Checklist</h2>
+    <ul class="checklist" id="tradChecklist"></ul>
+    <div class="subtle">DracoF's advice: decide no more than once a week, on the day your lock dividends arrive (usually Tuesday).</div>
+  </div>
+
   <details class="formula">
     <summary>Formula reference</summary>
     <div class="formula-body">
@@ -656,7 +657,7 @@ price cushion = 1 − 360 ÷ total days      (how far GMT can fall before total 
 <div class="grid">
 
   <!-- TARGETS & MARKET -->
-  <div class="panel">
+  <div class="panel" style="grid-column:1/-1;">
     <h2>Targets &amp; Market</h2>
     <div class="row2">
       <div class="field">
@@ -707,12 +708,6 @@ price cushion = 1 − 360 ÷ total days      (how far GMT can fall before total 
     </div>
   </div>
 
-  <!-- AUDACITY'S PLAN -->
-  <div class="panel">
-    <h2>Audacity's Plan</h2>
-    <ul class="checklist" id="modChecklist"></ul>
-    <div class="subtle">Buy into weakness, sell into strength. Not financial advice: the cutoff and the discounts are assumptions you set.</div>
-  </div>
 
   <!-- RESULTS -->
   <div class="panel results">
@@ -772,6 +767,13 @@ price cushion = 1 − 360 ÷ total days      (how far GMT can fall before total 
       <tbody id="modGreedyRows"></tbody>
     </table></div>
     <div class="subtle" id="modGreedyNote"></div>
+  </div>
+
+  <!-- AUDACITY'S PLAN -->
+  <div class="panel" style="grid-column:1/-1;">
+    <h2>Audacity's Plan</h2>
+    <ul class="checklist" id="modChecklist"></ul>
+    <div class="subtle">Buy into weakness, sell into strength. Not financial advice: the cutoff and the discounts are assumptions you set.</div>
   </div>
 
   <details class="formula">
@@ -1715,59 +1717,65 @@ function renderShared(S){
 
 // ---- Weekly rewards from the lock + GMT saved by the discounts (shared, shown on every tab) ----
 function renderRewards(S){
-  const {gmtPrice, f, lockedGMT, perDay0, d1, d2, d3, d4, totalDiscount, periodSel} = S;
-  const set = (id, text) => { document.getElementById(id).textContent = text; };
+  const {gmtPrice, f, lockedGMT, perDay0, d1, d2, d3, d4, totalDiscount} = S;
+  const el = id => document.getElementById(id);
+  const PERIODS = {day:[1,'day'], week:[7,'week'], month:[365/12,'month'], year:[365,'year']};
+  const pk = PERIODS[el('rewardPeriod').value] ? el('rewardPeriod').value : 'day';
+  const P = PERIODS[pk][0], pname = PERIODS[pk][1];
   const tOthers = Math.max(0, lockModel.totalVotes - lockedGMT*f);
-  const rewardGMT = modelWeekly(lockedGMT, f, tOthers, lockModel.weeklyPool);
+  const lockWeekGMT = modelWeekly(lockedGMT, f, tOthers, lockModel.weeklyPool);
   const apr = modelApr(lockedGMT, f, tOthers, lockModel.weeklyPool);
-  const base7 = 7*perDay0;                               // weekly maintenance at 0% discount, in GMT
-  const saveGMT = base7*totalDiscount;
-  const totalGMT = rewardGMT + saveGMT;
-  const periodName = periodSel.options[periodSel.selectedIndex].text.replace(' (4 years)','');
 
-  set('rwLockUsd', usd(rewardGMT*gmtPrice));
-  set('rwLockGmt', lockedGMT > 0 ? fmt(rewardGMT,2)+" GMT/wk · "+fmt(apr*100,2)+"% APR" : "nothing locked");
-  set('rwSaveUsd', usd(saveGMT*gmtPrice));
-  set('rwSaveGmt', fmt(saveGMT,2)+" GMT/wk · "+fmt(totalDiscount*100,2)+"% off");
-  set('rwTotalUsd', usd(totalGMT*gmtPrice));
-  set('rwTotalGmt', fmt(totalGMT,2)+" GMT/wk");
-
+  // everything below is built per day, then scaled by P
+  const maintDayGMT = S.weeklyOpexGMT/7;
+  const maintDayUsd = maintDayGMT*gmtPrice;
+  const lockDayGMT = lockWeekGMT/7;
+  const lockDayUsd = lockDayGMT*gmtPrice;
+  const poolBtc = parseFloat(el('poolRewardBtc').value);
   const td = 'style="font-family:var(--sans);"';
-  const row = (label, rate) => '<tr><td '+td+'>'+label+'</td><td>'+fmt(rate*100,2)+'%</td><td>'+fmt(base7*rate,2)+' GMT</td><td>'+usd(base7*rate*gmtPrice)+'</td></tr>';
-  document.getElementById('rwSaveRows').innerHTML =
-      row('Token', d1)
-    + row('VIP tier', d3)
-    + row('Service streak', d2)
-    + row('Mining mode', d4)
-    + '<tr><td '+td+'><b>Total</b></td><td><b>'+fmt(totalDiscount*100,2)+'%</b></td><td><b>'+fmt(saveGMT,2)+' GMT</b></td><td><b>'+usd(saveGMT*gmtPrice)+'</b></td></tr>';
-
-  // Daily profit. Maintenance is already after ALL discounts, so savings are not subtracted again.
-  const poolBtc = parseFloat(document.getElementById('poolRewardBtc').value);
-
-  const lockDayUsd = rewardGMT/7*gmtPrice;
-  const maintDayUsd = S.weeklyOpexGMT/7*gmtPrice;
   const signed = v => (v < 0 ? '−' : '+') + usd(Math.abs(v));
-  const prow = (label, val, bold) => '<tr><td '+td+'>'+(bold?'<b>':'')+label+(bold?'</b>':'')+'</td><td>'+(bold?'<b>':'')+val+(bold?'</b>':'')+'</td></tr>';
-  let profitHtml;
+  const gmtCell = v => (v < 0 ? '−' : '+') + fmt(Math.abs(v),2);
+  const prow = (label, v, g, bold) => {
+    const b1 = bold ? '<b>' : '', b2 = bold ? '</b>' : '';
+    return '<tr><td '+td+'>'+b1+label+b2+'</td><td>'+b1+signed(v*P)+b2+'</td><td>'+(g === null ? '' : b1+gmtCell(g*P)+b2)+'</td></tr>';
+  };
+  const lockLabel = 'Lock rewards'+(lockedGMT > 0 ? ' ('+fmt(apr*100,1)+'% APR)' : '');
+
+  el('rwUsdHead').textContent = 'USD / '+pname;
+  el('rwGmtHead').textContent = 'GMT / '+pname;
+  el('rwDiscGmtHead').textContent = 'GMT saved / '+pname;
+  el('rwDiscUsdHead').textContent = 'USD saved / '+pname;
+
+  let html, totalDay = null;
   if(poolBtc > 0){
     const earnDayUsd = poolBtc*S.mod.btcPrice;
     const preFee = earnDayUsd - maintDayUsd;
-    const feeDayUsd = (document.getElementById('reinvestFee').value === 'yes' && preFee > 0) ? preFee*GMT_REINVEST_FEE : 0;
+    const feeDayUsd = (el('reinvestFee').value === 'yes' && preFee > 0) ? preFee*GMT_REINVEST_FEE : 0;
     const mineProfit = preFee - feeDayUsd;
-    profitHtml = prow('Mining earnings', signed(earnDayUsd))
-      + prow('Maintenance', signed(-maintDayUsd))
-      + (feeDayUsd > 0 ? prow('Reinvest fee ('+fmt(GMT_REINVEST_FEE*100,2)+'%)', signed(-feeDayUsd)) : '')
-      + prow('Profit from mining', signed(mineProfit), true)
-      + prow('Lock rewards', signed(lockDayUsd))
-      + prow('Total profit', signed(mineProfit + lockDayUsd), true);
+    totalDay = mineProfit + lockDayUsd;
+    html = prow('Mining earnings', earnDayUsd, null)
+      + prow('Maintenance after discounts', -maintDayUsd, -maintDayGMT)
+      + (feeDayUsd > 0 ? prow('Reinvest fee ('+fmt(GMT_REINVEST_FEE*100,2)+'%)', -feeDayUsd, null) : '')
+      + prow('Profit from mining', mineProfit, null, true)
+      + prow(lockLabel, lockDayUsd, lockDayGMT)
+      + prow('Total profit', totalDay, null, true);
   }else{
-    profitHtml = prow('Maintenance', signed(-maintDayUsd))
-      + prow('Lock rewards', signed(lockDayUsd))
-      + '<tr><td colspan="2" '+td+'>Enter your daily pool reward above to see profit.</td></tr>';
+    html = prow('Maintenance after discounts', -maintDayUsd, -maintDayGMT)
+      + prow(lockLabel, lockDayUsd, lockDayGMT)
+      + '<tr><td colspan="3" '+td+'>Enter your daily pool reward (My Farm) to see profit.</td></tr>';
   }
-  document.getElementById('rwProfitRows').innerHTML = profitHtml;
+  el('rwProfitRows').innerHTML = html;
 
-  set('rwNote', 'Maintenance: '+usd(base7*gmtPrice)+'/wk without discounts, '+usd(S.weeklyOpexGMT*gmtPrice)+'/wk with.');
+  const base = perDay0*P;                                 // maintenance at 0% discount, GMT per period
+  const savedUsd = base*totalDiscount*gmtPrice;
+  const alt = pk === 'day' ? [7,'week'] : [1,'day'];
+  el('rwNote').textContent = 'Your discounts ('+fmt(totalDiscount*100,2)+'% off) already save you '+usd(savedUsd)+' per '+pname+' of that maintenance.'
+    + (totalDay !== null ? ' Total profit ≈ '+usd(totalDay*alt[0])+' per '+alt[1]+'.' : '');
+
+  const row = (label, rate) => '<tr><td '+td+'>'+label+'</td><td>'+fmt(rate*100,2)+'%</td><td>'+fmt(base*rate,2)+' GMT</td><td>'+usd(base*rate*gmtPrice)+'</td></tr>';
+  el('rwSaveRows').innerHTML =
+      row('Token', d1) + row('VIP tier', d3) + row('Service streak', d2) + row('Mining mode', d4)
+    + '<tr><td '+td+'><b>Total</b></td><td><b>'+fmt(totalDiscount*100,2)+'%</b></td><td><b>'+fmt(base*totalDiscount,2)+' GMT</b></td><td><b>'+usd(savedUsd)+'</b></td></tr>';
 }
 
 // ---- Tab: OPEX 125% Flywheel ------------------------------------------------------------
@@ -2036,7 +2044,7 @@ const SAVE_KEY = 'gmtFlywheel.saved.v1';
 const SAVE_NUM_IDS = ['th','watt','kwh','svcConst','lockedGmt','liquidGmt','lockedDays','liquidDays',
   'tradLocked','tradUnlocked','tradKeep','modLocked','modUnlocked','modMin','mktDiscount','btcCutoff',
   'greedyGrowth','target','poolRewardBtc'];
-const SAVE_SEL_IDS = ['d2','d3','period','reinvestFee'];
+const SAVE_SEL_IDS = ['d2','d3','period','reinvestFee','rewardPeriod'];
 const SAVE_NUM_RE = /^-?\d{0,15}\.?\d{0,15}$/;
 const DEFAULT_PROFILE_NAME = 'My setup';
 const NO_STORAGE_MSG = "Saving isn't available in this browser (private mode?). \"Copy link\" still works.";
