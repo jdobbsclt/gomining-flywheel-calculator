@@ -192,6 +192,8 @@ header p{
 }
 .compare-table td{padding:8px;border-bottom:1px solid var(--border);font-family:var(--mono);}
 @media(max-width:600px){
+  .row2.align-labels .field label{min-height:34px;}
+  .dsk{display:none;}
   .table-wrap .compare-table.fit{min-width:0;}
   .compare-table.fit th,.compare-table.fit td{padding:6px 4px;font-size:12px;}
 }
@@ -283,7 +285,7 @@ footer{
   letter-spacing:0.5px;text-transform:uppercase;font-weight:600;
   background:rgba(117,64,239,0.2);color:var(--violet-text);vertical-align:middle;
 }
-.kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 2px;border-bottom:1px solid var(--border);}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;padding:6px 2px;border-bottom:1px solid var(--border);}
 .kv:last-of-type{border-bottom:none;}
 .kv span{color:var(--dim);}
 .kv b{font-family:var(--mono);font-weight:600;}
@@ -493,7 +495,7 @@ footer{
 
     <div class="market-settings">
       <div class="market-title">Your rewards</div>
-      <div class="row2">
+      <div class="row2 align-labels">
         <div class="field">
           <label>Daily pool reward <b>BTC</b></label>
           <input type="number" id="poolRewardBtc" value="" step="any" min="0" placeholder="e.g. 0.00003508" oninput="calc()">
@@ -556,7 +558,7 @@ footer{
       <div class="formula-body" style="margin-top:6px;">
         <div class="table-wrap"><table class="compare-table fit" style="table-layout:fixed;">
           <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
-          <tr><th>Discount</th><th id="rwDiscUsdHead">USD saved</th><th id="rwDiscGmtHead">GMT saved</th></tr>
+          <tr><th>Discount</th><th id="rwDiscUsdHead">USD <span class="dsk">saved </span>/ day</th><th id="rwDiscGmtHead">GMT <span class="dsk">saved </span>/ day</th></tr>
           <tbody id="rwSaveRows"></tbody>
         </table></div>
       </div>
@@ -595,8 +597,8 @@ lock rewards = POOL × v ÷ (T_others + v),  v = locked GMT × lock-period facto
       <div class="subtle">Until the locked side reaches its target, keep only about this many days unlocked (DracoF: 14) and lock the rest for the maximum period.</div>
     </div>
     <div class="kv"><span>Total target</span><b id="tradTotalTarget">—</b></div>
-    <div class="kv"><span>Optional: buy miners when total is</span><b id="tradBuyTrigger">—</b></div>
-    <div class="kv"><span>Optional: sell extra miners when total is</span><b id="tradSellTrigger">—</b></div>
+    <div class="kv"><span>Optional: buy miners</span><b id="tradBuyTrigger">—</b></div>
+    <div class="kv"><span>Optional: sell extra miners</span><b id="tradSellTrigger">—</b></div>
     <div class="subtle">Defaults are DracoF's 360 locked / 140 unlocked = 500 days. "Days" are GoMining's maintenance days for your farm, as on the Maintenance Discount page.</div>
   </div>
 
@@ -1764,8 +1766,8 @@ function renderRewards(S){
 
   el('rwUsdHead').textContent = 'USD / '+pname;
   el('rwGmtHead').textContent = 'GMT / '+pname;
-  el('rwDiscGmtHead').textContent = 'GMT saved / '+pname;
-  el('rwDiscUsdHead').textContent = 'USD saved / '+pname;
+  el('rwDiscGmtHead').innerHTML = 'GMT <span class="dsk">saved </span>/ '+pname;
+  el('rwDiscUsdHead').innerHTML = 'USD <span class="dsk">saved </span>/ '+pname;
 
   let html, totalDay = null;
   if(poolBtc > 0){
