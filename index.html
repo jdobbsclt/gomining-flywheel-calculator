@@ -191,6 +191,15 @@ header p{
   border-bottom:1px solid var(--border);
 }
 .compare-table td{padding:8px;border-bottom:1px solid var(--border);font-family:var(--mono);}
+@media(max-width:600px){
+  .table-wrap .compare-table.fit{min-width:0;}
+  .compare-table.fit th,.compare-table.fit td{padding:6px 4px;font-size:12px;}
+}
+@media(max-width:380px){
+  .compare-table.fit col:first-child{width:34% !important;}
+  .compare-table.fit col:not(:first-child){width:33% !important;}
+  .compare-table.fit th,.compare-table.fit td{padding:5px 3px;font-size:11px;letter-spacing:0;}
+}
 .compare-table tr:last-child td{border-bottom:none;}
 .tag{
   display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;
@@ -527,7 +536,7 @@ footer{
         <option value="year">Year</option>
       </select>
     </div>
-    <div class="table-wrap"><table class="compare-table" style="table-layout:fixed;">
+    <div class="table-wrap"><table class="compare-table fit" style="table-layout:fixed;">
       <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
       <tr><th>Profit</th><th id="rwUsdHead">USD / day</th><th id="rwGmtHead">GMT / day</th></tr>
       <tbody id="rwProfitRows"></tbody>
@@ -536,7 +545,7 @@ footer{
     <details class="formula" style="padding:0;border:none;background:none;margin-top:10px;">
       <summary>See each discount</summary>
       <div class="formula-body" style="margin-top:6px;">
-        <div class="table-wrap"><table class="compare-table" style="table-layout:fixed;">
+        <div class="table-wrap"><table class="compare-table fit" style="table-layout:fixed;">
           <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
           <tr><th>Discount</th><th id="rwDiscUsdHead">USD saved</th><th id="rwDiscGmtHead">GMT saved</th></tr>
           <tbody id="rwSaveRows"></tbody>
@@ -626,7 +635,7 @@ lock rewards = POOL × v ÷ (T_others + v),  v = locked GMT × lock-period facto
       <div class="gap-bar"><div class="gap-bar-fill" id="tradGapBar" style="width:0%;"></div></div>
     </div>
 
-    <div class="table-wrap"><table class="compare-table">
+    <div class="table-wrap"><table class="compare-table fit">
       <tr><th>Target</th><th>Days</th><th>GMT · USD at today's price</th><th>You hold</th><th>Gap</th></tr>
       <tbody id="tradBuildRows"></tbody>
     </table></div>
@@ -755,7 +764,7 @@ price cushion = 1 − 360 ÷ total days      (how far GMT can fall before total 
       <div class="gap-bar"><div class="gap-bar-fill" id="modGapBar" style="width:0%;"></div></div>
     </div>
 
-    <div class="table-wrap"><table class="compare-table">
+    <div class="table-wrap"><table class="compare-table fit">
       <tr><th>Target</th><th>Days</th><th>GMT · USD at today's price</th><th>You hold</th><th>Gap</th></tr>
       <tbody id="modBuildRows"></tbody>
     </table></div>
