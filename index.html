@@ -518,9 +518,9 @@ footer{
       </div>
     </div>
     <div class="field" style="margin-top:14px;">
-      <label>Mining earnings <b>sats / TH / day</b></label>
-      <input type="number" id="satsPerTh" value="" step="0.1" min="0" placeholder="e.g. 40" oninput="calc()">
-      <div class="subtle">Your gross BTC earned per TH per day, <b>before</b> maintenance is taken out, from your GoMining dashboard. 1 sat = 0.00000001 BTC. Leave empty to hide the profit lines. Saved with your setup; not fed live.</div>
+      <label>Mining earnings <b>BTC / TH / day</b></label>
+      <input type="number" id="btcPerTh" value="" step="any" min="0" placeholder="paste the BTC per TH per day figure" oninput="calc()">
+      <div class="subtle">Your gross BTC earned per TH per day, <b>before</b> maintenance is taken out. Paste it in as a plain decimal. Leave empty to hide the profit lines. Saved with your setup; not fed live.</div>
     </div>
     <div class="table-wrap"><table class="compare-table">
       <tr><th>Daily Profit</th><th>USD / Day</th></tr>
@@ -1734,16 +1734,16 @@ function renderRewards(S){
     + '<tr><td '+td+'><b>Total</b></td><td><b>'+fmt(totalDiscount*100,2)+'%</b></td><td><b>'+fmt(saveGMT,2)+' GMT</b></td><td><b>'+usd(saveGMT*gmtPrice)+'</b></td></tr>';
 
   // Daily profit. Maintenance is already after ALL discounts, so savings are not subtracted again.
-  const sats = parseFloat(document.getElementById('satsPerTh').value);
+  const btcPerTh = parseFloat(document.getElementById('btcPerTh').value);
   const lockDayUsd = rewardGMT/7*gmtPrice;
   const maintDayUsd = S.weeklyOpexGMT/7*gmtPrice;
   const signed = v => (v < 0 ? '−' : '+') + usd(Math.abs(v));
   const prow = (label, val, bold) => '<tr><td '+td+'>'+(bold?'<b>':'')+label+(bold?'</b>':'')+'</td><td>'+(bold?'<b>':'')+val+(bold?'</b>':'')+'</td></tr>';
   let profitHtml;
-  if(sats > 0){
-    const earnDayUsd = S.th*sats*1e-8*S.mod.btcPrice;
+  if(btcPerTh > 0){
+    const earnDayUsd = S.th*btcPerTh*S.mod.btcPrice;
     const mineProfit = earnDayUsd - maintDayUsd;
-    profitHtml = prow('Mining earnings (TH × sats × BTC price)', signed(earnDayUsd))
+    profitHtml = prow('Mining earnings (TH × BTC per TH × BTC price)', signed(earnDayUsd))
       + prow('Maintenance after all discounts', signed(-maintDayUsd))
       + prow('Profit from mining', signed(mineProfit), true)
       + prow('Lock rewards (weekly ÷ 7)', signed(lockDayUsd))
@@ -1751,7 +1751,7 @@ function renderRewards(S){
   }else{
     profitHtml = prow('Maintenance after all discounts', signed(-maintDayUsd))
       + prow('Lock rewards (weekly ÷ 7)', signed(lockDayUsd))
-      + '<tr><td colspan="2" '+td+'>Enter your mining earnings above (sats per TH per day) to see daily profit.</td></tr>';
+      + '<tr><td colspan="2" '+td+'>Enter your mining earnings above (BTC per TH per day) to see daily profit.</td></tr>';
   }
   document.getElementById('rwProfitRows').innerHTML = profitHtml;
 
@@ -2023,9 +2023,9 @@ function initMiners(){
 const SAVE_KEY = 'gmtFlywheel.saved.v1';
 const SAVE_NUM_IDS = ['th','watt','kwh','svcConst','lockedGmt','liquidGmt','lockedDays','liquidDays',
   'tradLocked','tradUnlocked','tradKeep','modLocked','modUnlocked','modMin','mktDiscount','btcCutoff',
-  'greedyGrowth','target','satsPerTh'];
+  'greedyGrowth','target','btcPerTh'];
 const SAVE_SEL_IDS = ['d2','d3','period'];
-const SAVE_NUM_RE = /^-?\d{0,15}\.?\d{0,10}$/;
+const SAVE_NUM_RE = /^-?\d{0,15}\.?\d{0,15}$/;
 const DEFAULT_PROFILE_NAME = 'My setup';
 const NO_STORAGE_MSG = "Saving isn't available in this browser (private mode?). \"Copy link\" still works.";
 const $id = id => document.getElementById(id);
