@@ -1737,7 +1737,7 @@ function renderRewards(S){
   const gmtCell = v => (v < 0 ? '−' : '+') + fmt(Math.abs(v),2);
   const prow = (label, v, g, bold) => {
     const b1 = bold ? '<b>' : '', b2 = bold ? '</b>' : '';
-    return '<tr><td '+td+'>'+b1+label+b2+'</td><td>'+b1+signed(v*P)+b2+'</td><td>'+(g === null ? '' : b1+gmtCell(g*P)+b2)+'</td></tr>';
+    return '<tr><td '+td+'>'+b1+label+b2+'</td><td>'+b1+signed(v*P)+b2+'</td><td>'+b1+gmtCell((g === null ? v/gmtPrice : g)*P)+b2+'</td></tr>';
   };
   const lockLabel = 'Lock rewards'+(lockedGMT > 0 ? ' ('+fmt(apr*100,1)+'% APR)' : '');
 
