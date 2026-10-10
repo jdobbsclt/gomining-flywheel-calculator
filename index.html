@@ -526,18 +526,20 @@ footer{
         <option value="year">Year</option>
       </select>
     </div>
-    <div class="table-wrap"><table class="compare-table">
+    <div class="table-wrap"><table class="compare-table" style="table-layout:fixed;">
+      <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
       <tr><th>Profit</th><th id="rwUsdHead">USD / day</th><th id="rwGmtHead">GMT / day</th></tr>
       <tbody id="rwProfitRows"></tbody>
     </table></div>
     <div class="subtle" id="rwNote">—</div>
-    <details class="formula">
+    <details class="formula" style="padding:0;border:none;background:none;margin-top:10px;">
       <summary>See each discount</summary>
-      <div class="formula-body">
-        <table class="compare-table">
-          <tr><th>Discount</th><th>Rate</th><th id="rwDiscGmtHead">GMT saved</th><th id="rwDiscUsdHead">USD saved</th></tr>
+      <div class="formula-body" style="margin-top:6px;">
+        <div class="table-wrap"><table class="compare-table" style="table-layout:fixed;">
+          <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
+          <tr><th>Discount</th><th id="rwDiscUsdHead">USD saved</th><th id="rwDiscGmtHead">GMT saved</th></tr>
           <tbody id="rwSaveRows"></tbody>
-        </table>
+        </table></div>
       </div>
     </details>
     <details class="formula">
@@ -1772,10 +1774,13 @@ function renderRewards(S){
   el('rwNote').textContent = 'Your discounts ('+fmt(totalDiscount*100,2)+'% off) already save you '+usd(savedUsd)+' per '+pname+' of that maintenance.'
     + (totalDay !== null ? ' Total profit ≈ '+usd(totalDay*alt[0])+' per '+alt[1]+'.' : '');
 
-  const row = (label, rate) => '<tr><td '+td+'>'+label+'</td><td>'+fmt(rate*100,2)+'%</td><td>'+fmt(base*rate,2)+' GMT</td><td>'+usd(base*rate*gmtPrice)+'</td></tr>';
+  const row = (label, rate, bold) => {
+    const b1 = bold ? '<b>' : '', b2 = bold ? '</b>' : '';
+    return '<tr><td '+td+'>'+b1+label+' · '+fmt(rate*100,2)+'%'+b2+'</td><td>'+b1+signed(base*rate*gmtPrice)+b2+'</td><td>'+b1+gmtCell(base*rate)+b2+'</td></tr>';
+  };
   el('rwSaveRows').innerHTML =
       row('Token', d1) + row('VIP tier', d3) + row('Service streak', d2) + row('Mining mode', d4)
-    + '<tr><td '+td+'><b>Total</b></td><td><b>'+fmt(totalDiscount*100,2)+'%</b></td><td><b>'+fmt(base*totalDiscount,2)+' GMT</b></td><td><b>'+usd(savedUsd)+'</b></td></tr>';
+    + row('Total', totalDiscount, true);
 }
 
 // ---- Tab: OPEX 125% Flywheel ------------------------------------------------------------
