@@ -195,6 +195,15 @@ header p{
   .table-wrap .compare-table.fit{min-width:0;}
   .compare-table.fit th,.compare-table.fit td{padding:6px 4px;font-size:12px;}
 }
+@media(max-width:600px){
+  .compare-table.stack,.compare-table.stack tbody,.compare-table.stack tr,.compare-table.stack td{display:block;width:100%;}
+  .compare-table.stack tr:has(th){display:none;}
+  .compare-table.stack tbody tr{border-bottom:1px solid var(--border);padding:8px 0;}
+  .compare-table.stack td{display:flex;justify-content:space-between;gap:12px;border:none;padding:3px 4px;text-align:right;}
+  .compare-table.stack td::before{content:attr(data-label);color:var(--dim);text-align:left;font-family:var(--sans);}
+  .compare-table.stack td:first-child{text-align:left;font-weight:600;padding-bottom:5px;}
+  .compare-table.stack td:first-child::before{content:none;}
+}
 @media(max-width:380px){
   .compare-table.fit col:first-child{width:34% !important;}
   .compare-table.fit col:not(:first-child){width:33% !important;}
@@ -896,12 +905,12 @@ TH growth after n years = (1 + weekly growth)^(52 n) − 1</code>
       <div class="gap-bar"><div class="gap-bar-fill" id="gapBar" style="width:0%;"></div></div>
     </div>
 
-    <div class="table-wrap"><table class="compare-table">
+    <div class="table-wrap"><table class="compare-table fit stack">
       <tr><th>Plan</th><th>Required Locked GMT</th><th>Token Discount</th><th>Lock APR</th><th>From Your Liquid</th><th>GMT to Buy</th></tr>
       <tbody id="planRows"></tbody>
     </table></div>
 
-    <div class="table-wrap"><table class="compare-table">
+    <div class="table-wrap"><table class="compare-table fit">
       <tr><th>Lock Period (lock all)</th><th>Required Locked GMT</th><th>Lock APR</th><th>GMT to Buy</th></tr>
       <tbody id="periodRows"></tbody>
     </table></div>
@@ -1292,8 +1301,8 @@ function setHead(headlineId, hvalId, ok){
   setState(document.getElementById(headlineId), ok);
   setState(document.getElementById(hvalId), ok);
 }
-function tdc(text, ok){
-  return '<td'+(ok === true ? ' class="ok"' : (ok === false ? ' class="bad"' : ''))+'>'+text+'</td>';
+function tdc(text, ok, label){
+  return '<td'+(ok === true ? ' class="ok"' : (ok === false ? ' class="bad"' : ''))+(label ? ' data-label="'+label+'"' : '')+'>'+text+'</td>';
 }
 
 // Targets vs what you hold, as table rows (used by the Traditional and Modified tabs).
@@ -1844,11 +1853,11 @@ function renderOpex(S){
     const tierAt = tierFor(Math.max(L, lockedGMT) + keep, dm);
     return "<tr>"
       + "<td "+td+">"+label+"</td>"
-      + tdc(fmt(L,0)+" GMT", lockedGMT >= L)
-      + "<td>"+tierAt+"%</td>"
-      + "<td>"+fmt(modelApr(L, f, tOthers, pool)*100,2)+"%</td>"
-      + "<td>"+(fromLiquid>0 ? fmt(fromLiquid,0)+" GMT" : "—")+"</td>"
-      + tdc(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none", buy <= 0.5)
+      + tdc(fmt(L,0)+" GMT", lockedGMT >= L, "Required locked GMT")
+      + "<td data-label=\"Token discount\">"+tierAt+"%</td>"
+      + "<td data-label=\"Lock APR\">"+fmt(modelApr(L, f, tOthers, pool)*100,2)+"%</td>"
+      + "<td data-label=\"From your liquid\">"+(fromLiquid>0 ? fmt(fromLiquid,0)+" GMT" : "—")+"</td>"
+      + tdc(buy>0 ? fmt(buy,0)+" GMT · "+usd(buy*gmtPrice) : "none", buy <= 0.5, "GMT to buy")
       + "</tr>";
   }
   document.getElementById('planRows').innerHTML =
