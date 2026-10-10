@@ -360,8 +360,8 @@ footer{
 
   <!-- MY FARM & DISCOUNTS -->
   <div class="panel" style="grid-column:1/-1;">
-    <h2>My Farm &amp; Discounts</h2>
-    <div class="subtle key-hint">Start here: enter your hashpower, efficiency, VIP tier and service streak.</div>
+    <h2>My Farm, Discounts &amp; GMT</h2>
+    <div class="subtle key-hint">Start here: enter your hashpower, efficiency, VIP tier, service streak and the GMT you hold.</div>
     <div class="row2 key-inputs">
       <div class="field">
         <label>Total Hashpower <b id="thOut">20.00</b> TH</label>
@@ -451,6 +451,29 @@ footer{
     </div>
 
     <div class="market-settings">
+      <div class="market-title">My GMT position</div>
+    <div class="posgrid">
+      <div class="field">
+        <label>Locked GMT <b id="lockedGmtOut">—</b></label>
+        <input type="number" class="key" id="lockedGmt" step="1" min="0" placeholder="GMT you have locked" oninput="setBasis('locked','gmt')">
+      </div>
+      <div class="field">
+        <label>Liquid GMT <b id="liquidGmtOut">—</b></label>
+        <input type="number" class="key" id="liquidGmt" step="1" min="0" placeholder="GMT you hold unlocked" oninput="setBasis('liquid','gmt')">
+      </div>
+      <div class="field">
+        <label>Locked Days <b id="lockedDaysOut">0</b></label>
+        <input type="number" id="lockedDays" step="1" min="0" placeholder="or days of cover" oninput="setBasis('locked','days')">
+      </div>
+      <div class="field">
+        <label>Liquid Days <b id="liquidDaysOut">0</b></label>
+        <input type="number" id="liquidDays" step="1" min="0" placeholder="or days of cover" oninput="setBasis('liquid','days')">
+      </div>
+    </div>
+      <div class="subtle">What you hold today; leave empty if none. "Days" = days of maintenance your GMT covers (as on GoMining's Maintenance Discount page). Type GMT or days and the other updates.</div>
+    </div>
+
+    <div class="market-settings">
       <div class="market-title">Your rewards</div>
       <div class="row2">
         <div class="field">
@@ -490,30 +513,6 @@ footer{
         </div>
       </div>
     </details>
-  </div>
-
-  <!-- POSITION -->
-  <div class="panel" id="posPanel">
-    <h2>My GMT Position</h2>
-    <div class="posgrid">
-      <div class="field">
-        <label>Locked GMT <b id="lockedGmtOut">—</b></label>
-        <input type="number" class="key" id="lockedGmt" step="1" min="0" placeholder="GMT you have locked" oninput="setBasis('locked','gmt')">
-      </div>
-      <div class="field">
-        <label>Liquid GMT <b id="liquidGmtOut">—</b></label>
-        <input type="number" class="key" id="liquidGmt" step="1" min="0" placeholder="GMT you hold unlocked" oninput="setBasis('liquid','gmt')">
-      </div>
-      <div class="field">
-        <label>Locked Days <b id="lockedDaysOut">0</b></label>
-        <input type="number" id="lockedDays" step="1" min="0" placeholder="or days of cover" oninput="setBasis('locked','days')">
-      </div>
-      <div class="field">
-        <label>Liquid Days <b id="liquidDaysOut">0</b></label>
-        <input type="number" id="liquidDays" step="1" min="0" placeholder="or days of cover" oninput="setBasis('liquid','days')">
-      </div>
-    </div>
-    <div class="subtle">Enter what you hold today. Leave a box empty if you have none. "Days" = days of maintenance your GMT covers, as on GoMining's Maintenance Discount page (counted after your VIP, service and mining-mode discounts, before the token discount). Days and GMT are two views of the same amount: type in either one and the other updates. The one you edited last stays fixed when the GMT price or farm settings change.</div>
   </div>
 
   <!-- WEEKLY REWARDS & SAVINGS -->
